@@ -1,55 +1,58 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+<!--
+Sync Impact Report:
+Version change: N/A → 1.0.0
+Added sections:
+- Command-Line Interface Focus: This is a COMMAND-LINE (console) application only; no GUI components or web interfaces
+- In-Memory Storage: Tasks must be stored IN MEMORY (no database, no file persistence); data is ephemeral
+- Scope Adherence (NON-NEGOTIABLE): Scope is STRICTLY limited to Phase I Basic Level features; Do NOT add advanced features such as authentication, priorities, deadlines, tags, or persistence
+- Clean Code Practices: Follow clean code principles and Python best practices; Use Python 3.13+ syntax where appropriate
+- Simple Implementation: Avoid over-engineering; keep logic simple and explicit; Choose the simplest valid implementation that satisfies the requirements
+- Feature Completeness: Must implement all Non-Negotiable Features: Add Task, View Task List, Update Task, Delete Task, Mark Task as Complete/Incomplete
+- Development Standards: Use spec-driven development with Spec-Kit Plus and Claude Code; Project must follow a clean and professional Python folder structure; Code must be readable, modular, and beginner-friendly
+- Implementation Guidelines: If any ambiguity exists, choose the simplest valid implementation that satisfies the requirements; Use Python 3.13+ syntax where appropriate
+
+Modified principles: None
+Removed sections: None
+Templates requiring updates:
+- .specify/templates/plan-template.md ⚠ pending - Constitution Check section should reference the new principles
+- .specify/templates/spec-template.md ⚠ pending - May need alignment with scope constraints
+- .specify/templates/tasks-template.md ⚠ pending - May need alignment with implementation guidelines
+
+Follow-up TODOs: None
+-->
+
+# Todo In-Memory Python Console Application Constitution
 
 ## Core Principles
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### Command-Line Interface Focus
+This is a COMMAND-LINE (console) application only; no GUI components or web interfaces.
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+### In-Memory Storage
+Tasks must be stored IN MEMORY (no database, no file persistence); data is ephemeral.
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+### Scope Adherence (NON-NEGOTIABLE)
+Scope is STRICTLY limited to Phase I Basic Level features; Do NOT add advanced features such as authentication, priorities, deadlines, tags, or persistence.
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+### Clean Code Practices
+Follow clean code principles and Python best practices; Use Python 3.13+ syntax where appropriate.
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+### Simple Implementation
+Avoid over-engineering; keep logic simple and explicit; Choose the simplest valid implementation that satisfies the requirements.
 
-### [PRINCIPLE_6_NAME]
+### Feature Completeness
+Must implement all Non-Negotiable Features: Add Task, View Task List, Update Task, Delete Task, Mark Task as Complete/Incomplete.
 
+## Development Standards
 
-[PRINCIPLE__DESCRIPTION]
+Use spec-driven development with Spec-Kit Plus and Claude Code; Project must follow a clean and professional Python folder structure; Code must be readable, modular, and beginner-friendly.
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+## Implementation Guidelines
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
-
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
-
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
+If any ambiguity exists, choose the simplest valid implementation that satisfies the requirements; Use Python 3.13+ syntax where appropriate.
 
 ## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
 
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
+Constitution supersedes all other practices; Amendments require documentation and approval; All implementations must verify compliance with these principles.
 
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+**Version**: 1.0.0 | **Ratified**: 2025-12-24 | **Last Amended**: 2025-12-24

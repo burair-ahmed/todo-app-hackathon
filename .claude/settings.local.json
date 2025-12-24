@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find . -name \"*.md\" -not -path \"./.specify/memory/constitution.md\" -exec grep -l \"constitution\\\\|Constitution\" {} ;)",
+      "Bash(git fetch --all --prune)",
+      "Bash(.specify/scripts/powershell/create-new-feature.ps1 -Json \"Specify Phase I: Todo In-Memory Python Console Application.\n\nFunctional Requirements:\n\n1. Add Task\n   - User can add a task via console input.\n   - Task must include:\n     - Unique ID \\(auto-generated\\)\n     - Title \\(required\\)\n     - Description \\(optional\\)\n     - Completion status \\(default: incomplete\\)\n\n2. View Task List\n   - Display all tasks in the console.\n   - Each task should show:\n     - ID\n     - Title\n     - Description\n     - Status \\(Completed / Incomplete\\)\n\n3. Update Task\n   - User can update task title and/or description by task ID.\n   - Completion status must remain unchanged unless explicitly toggled.\n\n4. Delete Task\n   - User can delete a task by providing its ID.\n   - Deleted tasks are permanently removed from memory.\n\n5. Mark Task as Complete / Incomplete\n   - User can toggle task completion status by ID.\n\nNon-Functional Requirements:\n- Application runs entirely in memory.\n- Clear console prompts and outputs.\n- Graceful handling of invalid input \\(e.g., invalid IDs\\).\n- Fast startup with no external services required.\n\nDefine:\n- Task data model\n- Application flow\n- Console command structure\n- Error handling strategy\" -Json -Number 1 -ShortName \"todo-console-app\")",
+      "Bash(.specify/scripts/powershell/setup-plan.ps1 -Json)",
+      "Bash(.specify/scripts/powershell/check-prerequisites.ps1 -Json)",
+      "Bash(.specify/scripts/powershell/check-prerequisites.ps1 -Json -RequireTasks -IncludeTasks)",
+      "Bash(python -m unittest discover -s tests/unit -p \"test_*.py\" -v)",
+      "Bash(python -m unittest discover -s tests/integration -p \"test_*.py\" -v)",
+      "Bash(python -m unittest discover -s tests/ -p \"test_*.py\" -v)",
+      "Bash(python -m unittest tests.unit.test_task -v)",
+      "Bash(python -m unittest tests.unit.test_task_manager -v)",
+      "Bash(python -m unittest tests.integration.test_cli -v)",
+      "Bash(timeout 10s python src/main.py)",
+      "Bash(timeout 5s python src/main.py)",
+      "Bash(timeout 5s python -m src.main)",
+      "Bash(timeout 5s python -c \"import sys; sys.path.insert\\(0, ''.''\\); from src.main import main; main\\(\\)\")",
+      "Bash(python -m unittest tests.integration.test_cli.TestCLIAddTask.test_update_task_successfully -v)",
+      "Bash(python -m unittest tests.integration.test_cli.TestCLIAddTask.test_delete_task_successfully -v)",
+      "Bash(python -m unittest discover -s tests/ -p \"test_*.py\")",
+      "Bash(python -m unittest tests.unit.test_task tests.unit.test_task_manager tests.integration.test_cli)"
+    ]
+  }
+}
