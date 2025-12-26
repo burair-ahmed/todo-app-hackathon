@@ -1,0 +1,36 @@
+# Configuration for Todo Full-Stack Application
+
+project:
+  name: "Todo Full-Stack Application"
+  version: "1.0.0"
+  description: "A full-stack todo application with authentication and task management"
+
+backend:
+  host: "0.0.0.0"
+  port: 8000
+  debug: true
+  cors_origins:
+    - "http://localhost:3000"
+    - "http://127.0.0.1:3000"
+    - "http://localhost:3001"
+    - "http://127.0.0.1:3001"
+
+frontend:
+  host: "localhost"
+  port: 3000
+  public_path: "/"
+
+database:
+  url: "${DATABASE_URL}"
+  pool_size: 20
+  max_overflow: 30
+  echo: false
+
+auth:
+  jwt_secret: "${JWT_SECRET}"
+  jwt_algorithm: "${JWT_ALGORITHM}"
+  jwt_expiration_hours: 24
+
+api:
+  prefix: "/api"
+  version: "v1"

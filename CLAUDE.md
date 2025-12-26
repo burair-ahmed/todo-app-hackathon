@@ -1,60 +1,79 @@
-# Todo Console Application - Claude Code Usage
+# Todo Full-Stack Web Application - Claude Code Usage
 
 This project was developed using Claude Code, an AI assistant for software engineering tasks.
 
 ## Project Overview
 
-The Todo Console Application is a Python-based in-memory task management system that allows users to:
-- Add, view, update, and delete tasks
-- Mark tasks as complete/incomplete
-- Interact through a console-based interface
+The Todo Full-Stack Web Application is a complete application with:
+- Next.js 16+ frontend (App Router)
+- FastAPI backend with SQLModel ORM
+- PostgreSQL database
+- JWT-based authentication with Better Auth
+- Multi-user support with data isolation
 
 ## Development Process
 
 The application was built following a structured approach with the following phases:
-1. Project setup and directory structure
-2. Core data models and services
-3. User stories implementation (add, view, update, delete, toggle completion)
-4. Console UI and input validation
-5. Comprehensive testing
-6. Code polish and documentation
+1. Project setup and monorepo structure
+2. Backend: Database models, services, and API endpoints
+3. Frontend: Authentication, components, and pages
+4. Security: JWT middleware and access control
+5. Integration and testing
 
 ## Code Structure
 
-The project follows a clean, modular architecture:
-- **src/models/**: Data models (Task)
-- **src/services/**: Business logic (TaskManager)
-- **src/cli/**: User interface (Menu)
-- **tests/unit/**: Unit tests for models and services
-- **tests/integration/**: Integration tests for CLI flows
+The project follows a monorepo architecture:
+- **backend/**: FastAPI backend with SQLModel
+  - **src/models/**: SQLModel data models (User, Task)
+  - **src/services/**: Business logic (Auth, Task service)
+  - **src/api/**: API routes (Auth, Tasks)
+  - **src/middleware/**: JWT authentication
+  - **src/database/**: Database configuration
+- **frontend/**: Next.js frontend with App Router
+  - **src/app/**: App Router pages (login, register, dashboard)
+  - **src/components/**: React components (TaskList, TaskForm, ProtectedRoute)
+  - **src/services/**: API and auth services
+  - **src/types/**: TypeScript type definitions
 
 ## Key Features
 
-- In-memory storage (no persistence)
-- Input validation and error handling
-- User-friendly console interface with icons and clear messages
-- Comprehensive test coverage
-- Clean, documented code with proper type hints
+- User authentication (register/login/logout)
+- Task management (create, read, update, delete, toggle completion)
+- Multi-user support with proper data isolation
+- JWT-based authentication
+- Responsive UI design
+- Secure API with access control
 
 ## Claude Code Commands Used
 
-- `/sp.tasks`: Generated detailed task breakdown for implementation
-- `/sp.implement`: Implemented the complete application following the task plan
+- `/sp.constitution`: Updated project constitution for full-stack app
+- `/sp.specify`: Created detailed feature specification
+- `/sp.plan`: Generated implementation plan
+- `/sp.tasks`: Generated detailed task breakdown
 - Various file operations to create and modify source files
 - Test creation and validation
 
 ## Quality Assurance
 
-- All unit tests pass (29 tests)
-- All integration tests pass (12 tests)
-- Proper error handling for edge cases
-- Input validation to prevent invalid data
-- Clean, documented code with proper docstrings
+- Backend API endpoints properly secured with JWT authentication
+- User data isolation enforced at the API level
+- Frontend components properly handle authentication state
+- Responsive UI design for multiple device sizes
+- Clean, documented code with proper type hints
 
 ## Running the Application
 
-Execute `python src/main.py` to start the application.
+1. Set up environment variables in `.env` (backend) and `.env.local` (frontend)
+2. Start backend: `cd backend && uvicorn src.main:app --reload --port 8000`
+3. Start frontend: `cd frontend && npm run dev`
+4. Access the application at `http://localhost:3000`
+
+## Database Setup
+
+1. Ensure PostgreSQL is running
+2. Run database migrations: `alembic upgrade head`
 
 ## Testing
 
-Run `python -m unittest discover -s tests/ -p "test_*.py"` to execute all tests.
+Backend tests: `python -m pytest`
+Frontend tests: `npm test`

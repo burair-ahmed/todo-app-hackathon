@@ -1,0 +1,87 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+:root {
+  --horizon-mint: #91C6BC;
+  --horizon-ocean: #4B9DA9;
+  --horizon-accent: #E37434;
+  --horizon-cream: #F6F3C2;
+}
+
+@layer base {
+  * {
+    @apply border-gray-200;
+  }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    @apply bg-background-soft text-gray-900 selection:bg-horizon-200/30 overflow-x-hidden;
+    background-image: var(--horizon-mesh);
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: 'Outfit', sans-serif;
+    @apply tracking-tight font-black;
+  }
+}
+
+@layer components {
+
+  /* The "Horizon" Glass Surface */
+  .glass-surface {
+    @apply bg-white/70 backdrop-blur-xl border border-white/40 shadow-glass transition-all duration-500;
+  }
+
+  .glass-surface-hover {
+    @apply hover:bg-white/80 hover:shadow-glass-hover hover:border-white/60;
+  }
+
+  /* Interactive Elements */
+  .btn-horizon {
+    @apply relative overflow-hidden px-8 py-3.5 rounded-2xl font-bold transition-all duration-500 bg-horizon-900 text-white shadow-soft-float hover:bg-horizon-800 hover:scale-[1.02] active:scale-95 disabled:opacity-50 disabled:pointer-events-none;
+  }
+
+  .btn-horizon-outline {
+    @apply border-2 border-horizon-900 px-8 py-3.5 rounded-2xl font-bold transition-all duration-500 text-horizon-900 hover:bg-horizon-50 active:scale-95;
+  }
+
+  /* High-Fidelity Input */
+  .input-horizon {
+    @apply w-full px-6 py-4 rounded-2xl border-2 border-transparent bg-white/50 backdrop-blur-md shadow-inner-glass transition-all duration-500 outline-none placeholder:text-gray-400 font-medium focus:bg-white focus:border-horizon-200 focus:shadow-glass;
+  }
+
+  /* Decorative Elements */
+  .text-horizon-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-br from-horizon-200 to-horizon-300;
+  }
+
+  .bg-horizon-mesh {
+    @apply fixed inset-0 -z-10 pointer-events-none;
+    background-image:
+      radial-gradient(at 0% 0%, hsla(169, 32%, 68%, 0.15) 0px, transparent 50%),
+      radial-gradient(at 100% 0%, hsla(188, 38%, 47%, 0.1) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, hsla(21, 75%, 55%, 0.08) 0px, transparent 50%),
+      radial-gradient(at 0% 100%, hsla(169, 32%, 68%, 0.1) 0px, transparent 50%);
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-horizon-100 rounded-full hover:bg-horizon-200 transition-colors;
+}
