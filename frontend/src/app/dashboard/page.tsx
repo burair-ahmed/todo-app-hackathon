@@ -28,6 +28,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [isAddingTask, setIsAddingTask] = useState(false);
+  const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
   const handleLogout = () => {
@@ -70,28 +71,49 @@ export default function DashboardPage() {
     <ProtectedRoute>
       <div className="flex min-h-screen bg-background-soft">
         {/* Sidebar - Desktop Only */}
-        <aside className="hidden lg:flex flex-col w-24 bg-white border-r border-gray-100 items-center py-8 space-y-8 sticky top-0 h-screen">
-          <div className="w-12 h-12 bg-horizon-900 rounded-2xl flex items-center justify-center text-white shadow-soft-float">
+        <aside className={`hidden lg:flex flex-col transition-all duration-300 bg-white border-r border-gray-100 py-8 sticky top-0 h-screen
+                          ${isSidebarExpanded ? 'w-64 px-6 items-start' : 'w-24 px-0 items-center'}`}>
+          <div className={`w-12 h-12 bg-horizon-900 rounded-2xl flex items-center justify-center text-white shadow-soft-float mb-8 ${isSidebarExpanded ? 'ml-0' : ''}`}>
             <Zap className="w-6 h-6 fill-current" />
           </div>
           
-          <nav className="flex-1 flex flex-col space-y-4">
-            <button className="p-4 rounded-2xl bg-horizon-50 text-horizon-300 transition-all shadow-sm">
-              <LayoutDashboard className="w-6 h-6" />
+          <nav className="flex-1 flex flex-col space-y-4 w-full">
+            <button className={`flex items-center space-x-4 p-4 rounded-2xl bg-horizon-50 text-horizon-300 transition-all shadow-sm w-full
+                              ${!isSidebarExpanded && 'justify-center'}`}>
+              <LayoutDashboard className="w-6 h-6 min-w-[24px]" />
+              {isSidebarExpanded && <span className="font-black text-sm uppercase tracking-widest">Dashboard</span>}
             </button>
-            <button className="p-4 rounded-2xl text-gray-400 hover:bg-gray-50 hover:text-gray-600 transition-all">
-              <Calendar className="w-6 h-6" />
+            <button className={`flex items-center space-x-4 p-4 rounded-2xl text-gray-400 hover:bg-gray-50 hover:text-gray-600 transition-all w-full
+                              ${!isSidebarExpanded && 'justify-center'}`}>
+              <Calendar className="w-6 h-6 min-w-[24px]" />
+              {isSidebarExpanded && <span className="font-black text-sm uppercase tracking-widest">Schedule</span>}
             </button>
-            <button className="p-4 rounded-2xl text-gray-400 hover:bg-gray-50 hover:text-gray-600 transition-all">
-              <Settings className="w-6 h-6" />
+            <button className={`flex items-center space-x-4 p-4 rounded-2xl text-gray-400 hover:bg-gray-50 hover:text-gray-600 transition-all w-full
+                              ${!isSidebarExpanded && 'justify-center'}`}>
+              <Settings className="w-6 h-6 min-w-[24px]" />
+              {isSidebarExpanded && <span className="font-black text-sm uppercase tracking-widest">Settings</span>}
+            </button>
+            
+            {/* Sidebar Toggle */}
+            <button 
+              onClick={() => setIsSidebarExpanded(!isSidebarExpanded)}
+              className={`flex items-center space-x-4 p-4 rounded-2xl text-gray-400 hover:bg-horizon-50 hover:text-horizon-300 transition-all w-full
+                              ${!isSidebarExpanded && 'justify-center'}`}
+            >
+              <div className={`transition-transform duration-500 ${isSidebarExpanded ? 'rotate-180' : ''}`}>
+                <ChevronRight className="w-6 h-6 min-w-[24px]" />
+              </div>
+              {isSidebarExpanded && <span className="font-black text-sm uppercase tracking-widest">Collapse</span>}
             </button>
           </nav>
 
           <button 
             onClick={handleLogout}
-            className="p-4 rounded-2xl text-gray-400 hover:bg-red-50 hover:text-red-500 transition-all mt-auto"
+            className={`flex items-center space-x-4 p-4 rounded-2xl text-gray-400 hover:bg-red-50 hover:text-red-500 transition-all mt-auto w-full
+                        ${!isSidebarExpanded && 'justify-center'}`}
           >
-            <LogOut className="w-6 h-6" />
+            <LogOut className="w-6 h-6 min-w-[24px]" />
+            {isSidebarExpanded && <span className="font-black text-sm uppercase tracking-widest">Sign Out</span>}
           </button>
         </aside>
 
@@ -103,7 +125,7 @@ export default function DashboardPage() {
               <h1 className="text-4xl font-black tracking-tight text-gray-900">
                 Workspace <span className="text-horizon-gradient">Control</span>
               </h1>
-              <p className="text-gray-500 font-bold tracking-tight">Welcome back, {user?.name || 'Commander'}.</p>
+              <p className="text-gray-500 font-bold tracking-tight">Welcome back, {user?.name || 'User'}.</p>
             </div>
 
             <div className="flex items-center space-x-4 w-full md:w-auto">

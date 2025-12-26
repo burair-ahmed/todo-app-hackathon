@@ -64,7 +64,7 @@ export default function TaskForm({ onTaskCreated, onTaskUpdated, taskToEdit, onC
         <div className="space-y-3">
           <label className="flex items-center space-x-2 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 ml-2">
             <Type className="w-3 h-3" />
-            <span>Objective Title</span>
+            <span>Task Title</span>
           </label>
           <div className="relative">
             <input
@@ -81,14 +81,14 @@ export default function TaskForm({ onTaskCreated, onTaskUpdated, taskToEdit, onC
         <div className="space-y-3">
           <label className="flex items-center space-x-2 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 ml-2">
             <AlignLeft className="w-3 h-3" />
-            <span>Contextual Intel</span>
+            <span>Description</span>
           </label>
           <textarea
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={5}
             className="input-horizon resize-none min-h-[160px]"
-            placeholder="Provide architectural details or relevant context for this objective..."
+            placeholder="Provide architectural details or relevant context for this task..."
           />
         </div>
       </div>
@@ -104,7 +104,7 @@ export default function TaskForm({ onTaskCreated, onTaskUpdated, taskToEdit, onC
           ) : (
             <>
               {isEditing ? <Save className="w-5 h-5" /> : <Sparkles className="w-5 h-5 drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]" />}
-              <span>{isEditing ? 'Sync Objective' : 'Initialize Objective'}</span>
+              <span>{isEditing ? 'Update Task' : 'Add Task'}</span>
             </>
           )}
         </button>

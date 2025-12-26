@@ -122,8 +122,8 @@ export default function TaskList({ onTaskUpdate, onTaskDelete }: TaskListProps) 
                     {task.title}
                   </h4>
                   {task.completed && (
-                    <span className="bg-horizon-50 text-horizon-300 text-[10px] font-black uppercase tracking-tighter px-2 py-0.5 rounded-full">
-                      Archived
+                    <span className="bg-green-50 text-green-600 text-[10px] font-black uppercase tracking-tighter px-2 py-0.5 rounded-full">
+                      Completed
                     </span>
                   )}
                 </div>
