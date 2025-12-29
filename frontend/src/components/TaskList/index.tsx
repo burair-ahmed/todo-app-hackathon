@@ -1,3 +1,5 @@
+'use client';
+
 import { useState, useEffect } from 'react';
 import { Task } from '../../types';
 import apiClient from '../../services/api-client';
@@ -17,9 +19,17 @@ import {
 interface TaskListProps {
   onTaskUpdate?: (task: Task) => void;
   onTaskDelete?: (taskId: string) => void;
+  filters?: {
+    search?: string;
+    priority?: string;
+    completed?: boolean;
+    tag_id?: string;
+    sort_by?: string;
+    order?: string;
+  };
 }
 
-export default function TaskList({ onTaskUpdate, onTaskDelete }: TaskListProps) {
+export default function TaskList({ onTaskUpdate, onTaskDelete, filters }: TaskListProps) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -27,12 +37,12 @@ export default function TaskList({ onTaskUpdate, onTaskDelete }: TaskListProps) 
 
   useEffect(() => {
     fetchTasks();
-  }, []);
+  }, [filters]);
 
   const fetchTasks = async () => {
     try {
       setLoading(true);
-      const tasksData = await apiClient.getTasks();
+      const tasksData = await apiClient.getTasks(filters);
       setTasks(tasksData);
     } catch (err) {
       setError('Neural network failure while fetching data');
@@ -84,10 +94,16 @@ export default function TaskList({ onTaskUpdate, onTaskDelete }: TaskListProps) 
           <Clock className="w-8 h-8 text-gray-300" />
         </div>
         <h3 className="text-xl font-black text-gray-900 mb-2">Zero Objectives</h3>
-        <p className="text-gray-400 font-bold text-sm">Your workspace is perfectly clear.</p>
+        <p className="text-gray-400 font-bold text-sm">No tasks matches your current filters.</p>
       </div>
     );
   }
+
+  const priorityColors = {
+    low: 'bg-blue-50 text-blue-500 border-blue-100',
+    medium: 'bg-orange-50 text-orange-500 border-orange-100',
+    high: 'bg-red-50 text-red-500 border-red-100'
+  };
 
   return (
     <div className="space-y-4">
@@ -116,22 +132,36 @@ export default function TaskList({ onTaskUpdate, onTaskDelete }: TaskListProps) 
               </button>
 
               <div className="flex-1 min-w-0">
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-3">
                   <h4 className={`text-lg font-black tracking-tight truncate transition-all duration-500
                                 ${task.completed ? 'text-gray-400 line-through' : 'text-gray-900 group-hover:text-horizon-300'}`}>
                     {task.title}
                   </h4>
-                  {task.completed && (
-                    <span className="bg-green-50 text-green-600 text-[10px] font-black uppercase tracking-tighter px-2 py-0.5 rounded-full">
-                      Completed
+                  <div className="flex items-center space-x-2">
+                    <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border transition-all duration-500 ${priorityColors[task.priority]}`}>
+                      {task.priority}
                     </span>
-                  )}
+                    {task.completed && (
+                      <span className="bg-green-50 text-green-600 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border border-green-100">
+                        Completed
+                      </span>
+                    )}
+                  </div>
                 </div>
                 {task.description && (
                   <p className={`text-sm font-medium mt-1 truncate max-w-sm
                               ${task.completed ? 'text-gray-300' : 'text-gray-500'}`}>
                     {task.description}
                   </p>
+                )}
+                {task.tags && task.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    {task.tags.map(tag => (
+                      <span key={tag.id} className="inline-flex items-center px-2 py-0.5 rounded-lg bg-gray-50 text-gray-400 text-[10px] font-bold border border-gray-100">
+                        #{tag.name}
+                      </span>
+                    ))}
+                  </div>
                 )}
               </div>
 

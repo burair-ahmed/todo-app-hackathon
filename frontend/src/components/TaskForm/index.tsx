@@ -1,10 +1,10 @@
 'use client';
 
-import { useState } from 'react';
-import { Task } from '../../types';
+import { useState, useEffect } from 'react';
+import { Task, Priority, Tag } from '../../types';
 import apiClient from '../../services/api-client';
 import { motion } from 'framer-motion';
-import { Save, X, Type, AlignLeft, Sparkles, Loader2 } from 'lucide-react';
+import { Save, X, Type, AlignLeft, Sparkles, Loader2, Flag, Hash, Plus } from 'lucide-react';
 
 interface TaskFormProps {
   onTaskCreated?: (task: Task) => void;
@@ -16,8 +16,43 @@ interface TaskFormProps {
 export default function TaskForm({ onTaskCreated, onTaskUpdated, taskToEdit, onCancelEdit }: TaskFormProps) {
   const [title, setTitle] = useState(taskToEdit?.title || '');
   const [description, setDescription] = useState(taskToEdit?.description || '');
+  const [priority, setPriority] = useState<Priority>(taskToEdit?.priority || 'medium');
+  const [selectedTagIds, setSelectedTagIds] = useState<string[]>(taskToEdit?.tags.map(t => t.id) || []);
+  const [allTags, setAllTags] = useState<Tag[]>([]);
+  const [newTagName, setNewTagName] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    fetchTags();
+  }, []);
+
+  const fetchTags = async () => {
+    try {
+      const tags = await apiClient.getTags();
+      setAllTags(tags);
+    } catch (err) {
+      console.error('Failed to fetch tags', err);
+    }
+  };
+
+  const handleCreateTag = async () => {
+    if (!newTagName.trim()) return;
+    try {
+      const tag = await apiClient.createTag(newTagName.trim());
+      setAllTags([...allTags, tag]);
+      setSelectedTagIds([...selectedTagIds, tag.id]);
+      setNewTagName('');
+    } catch (err) {
+      console.error('Failed to create tag', err);
+    }
+  };
+
+  const toggleTag = (tagId: string) => {
+    setSelectedTagIds(prev => 
+      prev.includes(tagId) ? prev.filter(id => id !== tagId) : [...prev, tagId]
+    );
+  };
 
   const isEditing = !!taskToEdit;
 
@@ -35,13 +70,22 @@ export default function TaskForm({ onTaskCreated, onTaskUpdated, taskToEdit, onC
         const updatedTask = await apiClient.updateTask(taskToEdit.id, {
           title: title || undefined,
           description: description || undefined,
+          priority,
+          tag_ids: selectedTagIds
         });
         if (onTaskUpdated) onTaskUpdated(updatedTask);
       } else {
-        const newTask = await apiClient.createTask({ title, description });
+        const newTask = await apiClient.createTask({ 
+          title, 
+          description, 
+          priority, 
+          tag_ids: selectedTagIds 
+        });
         if (onTaskCreated) onTaskCreated(newTask);
         setTitle('');
         setDescription('');
+        setPriority('medium');
+        setSelectedTagIds([]);
       }
     } catch (err) {
       setError('Neural encryption failed during sync');
@@ -77,6 +121,30 @@ export default function TaskForm({ onTaskCreated, onTaskUpdated, taskToEdit, onC
           </div>
         </div>
 
+        {/* Priority Selection */}
+        <div className="space-y-3">
+          <label className="flex items-center space-x-2 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 ml-2">
+            <Flag className="w-3 h-3" />
+            <span>Priority</span>
+          </label>
+          <div className="grid grid-cols-3 gap-4">
+            {(['low', 'medium', 'high'] as Priority[]).map((p) => (
+              <button
+                key={p}
+                type="button"
+                onClick={() => setPriority(p)}
+                className={`p-4 rounded-3xl border-2 transition-all font-black text-[10px] uppercase tracking-wider ${
+                  priority === p 
+                    ? 'border-horizon-400 bg-horizon-50 text-horizon-600' 
+                    : 'border-transparent bg-gray-50 text-gray-400 hover:bg-gray-100'
+                }`}
+              >
+                {p}
+              </button>
+            ))}
+          </div>
+        </div>
+
         {/* Description Input */}
         <div className="space-y-3">
           <label className="flex items-center space-x-2 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 ml-2">
@@ -87,9 +155,50 @@ export default function TaskForm({ onTaskCreated, onTaskUpdated, taskToEdit, onC
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             rows={5}
-            className="input-horizon resize-none min-h-[160px]"
-            placeholder="Provide architectural details or relevant context for this task..."
+            className="input-horizon resize-none min-h-[120px]"
+            placeholder="Provide architectural details..."
           />
+        </div>
+
+        {/* Tags Selection */}
+        <div className="space-y-3">
+          <label className="flex items-center space-x-2 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 ml-2">
+            <Hash className="w-3 h-3" />
+            <span>Tags</span>
+          </label>
+          <div className="flex flex-wrap gap-2 mb-4">
+            {allTags.map(tag => (
+              <button
+                key={tag.id}
+                type="button"
+                onClick={() => toggleTag(tag.id)}
+                className={`px-3 py-1.5 rounded-xl text-[10px] font-bold transition-all ${
+                  selectedTagIds.includes(tag.id)
+                    ? 'bg-horizon-500 text-white'
+                    : 'bg-gray-50 text-gray-400 hover:bg-gray-100'
+                }`}
+              >
+                {tag.name}
+              </button>
+            ))}
+          </div>
+          <div className="flex space-x-2">
+            <input
+              type="text"
+              value={newTagName}
+              onChange={(e) => setNewTagName(e.target.value)}
+              className="input-horizon flex-1"
+              placeholder="Add new tag..."
+              onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleCreateTag())}
+            />
+            <button
+              type="button"
+              onClick={handleCreateTag}
+              className="p-5 bg-horizon-50 text-horizon-500 rounded-3xl hover:bg-horizon-100 transition-all"
+            >
+              <Plus className="w-6 h-6" />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -103,7 +212,7 @@ export default function TaskForm({ onTaskCreated, onTaskUpdated, taskToEdit, onC
             <Loader2 className="w-6 h-6 animate-spin" />
           ) : (
             <>
-              {isEditing ? <Save className="w-5 h-5" /> : <Sparkles className="w-5 h-5 drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]" />}
+              {isEditing ? <Save className="w-5 h-5" /> : <Sparkles className="w-5 h-5" />}
               <span>{isEditing ? 'Update Task' : 'Add Task'}</span>
             </>
           )}

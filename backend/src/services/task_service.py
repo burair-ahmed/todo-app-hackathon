@@ -1,25 +1,66 @@
-from sqlmodel import Session, select
+from sqlmodel import Session, select, or_, desc
 from typing import List, Optional
 from uuid import UUID
-from ..models.task import Task, TaskCreate, TaskUpdate, TaskPatch
+from ..models.task import Task, TaskCreate, TaskUpdate, TaskPatch, Tag, TaskTagLink
 from ..models.user import User
 
 def create_task(session: Session, task_create: TaskCreate, user_id: UUID) -> Task:
-    """Create a new task for a user."""
+    """Create a new task for a user with priorities and tags."""
     task = Task(
         title=task_create.title,
         description=task_create.description,
         completed=task_create.completed,
+        priority=task_create.priority,
         user_id=user_id
     )
+    
+    if task_create.tag_ids:
+        statement = select(Tag).where(Tag.id.in_(task_create.tag_ids), Tag.user_id == user_id)
+        tags = session.exec(statement).all()
+        task.tags = tags
+
     session.add(task)
     session.commit()
     session.refresh(task)
     return task
 
-def get_tasks_by_user(session: Session, user_id: UUID) -> List[Task]:
-    """Get all tasks for a specific user."""
+def get_tasks_by_user(
+    session: Session, 
+    user_id: UUID,
+    search: Optional[str] = None,
+    priority: Optional[str] = None,
+    completed: Optional[bool] = None,
+    tag_id: Optional[UUID] = None,
+    sort_by: str = "created_at",
+    order: str = "desc"
+) -> List[Task]:
+    """Get all tasks for a specific user with advanced filtering and sorting."""
     statement = select(Task).where(Task.user_id == user_id)
+    
+    if search:
+        statement = statement.where(
+            or_(
+                Task.title.ilike(f"%{search}%"),
+                Task.description.ilike(f"%{search}%")
+            )
+        )
+    
+    if priority:
+        statement = statement.where(Task.priority == priority)
+        
+    if completed is not None:
+        statement = statement.where(Task.completed == completed)
+
+    if tag_id:
+        statement = statement.join(TaskTagLink).where(TaskTagLink.tag_id == tag_id)
+
+    # Sorting logic
+    sort_attr = getattr(Task, sort_by, Task.created_at)
+    if order == "desc":
+        statement = statement.order_by(desc(sort_attr))
+    else:
+        statement = statement.order_by(sort_attr)
+
     tasks = session.exec(statement).all()
     return tasks
 
@@ -30,12 +71,20 @@ def get_task_by_id(session: Session, task_id: UUID, user_id: UUID) -> Optional[T
     return task
 
 def update_task(session: Session, task_id: UUID, task_update: TaskUpdate, user_id: UUID) -> Optional[Task]:
-    """Update a specific task for a user."""
+    """Update a specific task for a user, including priority and tags."""
     task = get_task_by_id(session, task_id, user_id)
     if not task:
         return None
 
     update_data = task_update.dict(exclude_unset=True)
+    
+    # Handle tag_ids separately
+    tag_ids = update_data.pop("tag_ids", None)
+    if tag_ids is not None:
+        statement = select(Tag).where(Tag.id.in_(tag_ids), Tag.user_id == user_id)
+        tags = session.exec(statement).all()
+        task.tags = tags
+
     for field, value in update_data.items():
         setattr(task, field, value)
 

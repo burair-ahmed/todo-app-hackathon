@@ -1,12 +1,13 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../services/auth-service';
+import apiClient from '../../services/api-client';
 import ProtectedRoute from '../../components/ProtectedRoute';
 import TaskForm from '../../components/TaskForm';
 import TaskList from '../../components/TaskList';
-import { Task } from '../../types';
+import { Task, Tag } from '../../types';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   LayoutDashboard, 
@@ -20,7 +21,9 @@ import {
   Zap,
   ChevronRight,
   TrendingUp,
-  Settings
+  Settings,
+  Filter,
+  ArrowUpDown
 } from 'lucide-react';
 
 export default function DashboardPage() {
@@ -29,7 +32,36 @@ export default function DashboardPage() {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
+  
+  // Phase II: Filter States
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [filterPriority, setFilterPriority] = useState<string>('');
+  const [filterTagId, setFilterTagId] = useState<string>('');
+  const [filterCompleted, setFilterCompleted] = useState<boolean | undefined>(undefined);
+  const [sortBy, setSortBy] = useState<string>('created_at');
+  const [order, setOrder] = useState<'asc' | 'desc'>('desc');
+  const [allTags, setAllTags] = useState<Tag[]>([]);
+
+  useEffect(() => {
+    fetchTags();
+  }, []);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const fetchTags = async () => {
+    try {
+      const tags = await apiClient.getTags();
+      setAllTags(tags);
+    } catch (err) {
+      console.error('Failed to fetch tags', err);
+    }
+  };
 
   const handleLogout = () => {
     logout();
@@ -42,6 +74,15 @@ export default function DashboardPage() {
   };
 
   const handleTaskDone = () => setRefreshTrigger(prev => prev + 1);
+
+  const filters = useMemo(() => ({
+    search: debouncedSearch || undefined,
+    priority: filterPriority || undefined,
+    completed: filterCompleted,
+    tag_id: filterTagId || undefined,
+    sort_by: sortBy,
+    order: order
+  }), [debouncedSearch, filterPriority, filterCompleted, filterTagId, sortBy, order]);
 
   // Animation Variants
   const container = {
@@ -62,7 +103,7 @@ export default function DashboardPage() {
       y: 0, 
       transition: { 
         duration: 0.6, 
-        ease: [0.16, 1, 0.3, 1] as any // Fix for strict typing on cubic-bezier array
+        ease: [0.16, 1, 0.3, 1] as any
       } 
     }
   };
@@ -158,18 +199,82 @@ export default function DashboardPage() {
             {/* Main Task List - Large Column */}
             <motion.div variants={item} className="md:col-span-8 flex flex-col space-y-6">
               <div className="glass-surface p-8 rounded-[32px] flex-1">
-                <div className="flex justify-between items-center mb-8">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-2 h-8 bg-horizon-300 rounded-full" />
-                    <h2 className="text-2xl font-black">Active Objectives</h2>
+                <div className="flex flex-col space-y-6 mb-8">
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-2 h-8 bg-horizon-300 rounded-full" />
+                      <h2 className="text-2xl font-black">Active Objectives</h2>
+                    </div>
+                    <span className="text-xs font-black uppercase tracking-widest text-gray-400 bg-gray-50 px-3 py-1.5 rounded-full">
+                      {new Date().toLocaleDateString(undefined, { month: 'long', day: 'numeric' })}
+                    </span>
                   </div>
-                  <span className="text-xs font-black uppercase tracking-widest text-gray-400 bg-gray-50 px-3 py-1.5 rounded-full">
-                    {new Date().toLocaleDateString(undefined, { month: 'long', day: 'numeric' })}
-                  </span>
+
+                  {/* Phase II: Filters & Sorting Bar */}
+                  <div className="flex flex-wrap items-center gap-3 pt-4 border-t border-gray-50">
+                    <div className="flex items-center space-x-2 bg-gray-50 p-2 rounded-xl">
+                      <Filter className="w-3 h-3 text-gray-400" />
+                      <select 
+                        className="bg-transparent text-[10px] font-black uppercase tracking-wider outline-none text-gray-500"
+                        value={filterPriority}
+                        onChange={(e) => setFilterPriority(e.target.value)}
+                      >
+                        <option value="">All Priorities</option>
+                        <option value="low">Low</option>
+                        <option value="medium">Medium</option>
+                        <option value="high">High</option>
+                      </select>
+                    </div>
+
+                    <div className="flex items-center space-x-2 bg-gray-50 p-2 rounded-xl">
+                      <select 
+                        className="bg-transparent text-[10px] font-black uppercase tracking-wider outline-none text-gray-500"
+                        value={filterTagId}
+                        onChange={(e) => setFilterTagId(e.target.value)}
+                      >
+                        <option value="">All Tags</option>
+                        {allTags.map(tag => (
+                          <option key={tag.id} value={tag.id}>{tag.name}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div className="flex items-center space-x-2 bg-gray-50 p-2 rounded-xl">
+                      <select 
+                        className="bg-transparent text-[10px] font-black uppercase tracking-wider outline-none text-gray-500"
+                        value={filterCompleted === undefined ? '' : filterCompleted.toString()}
+                        onChange={(e) => setFilterCompleted(e.target.value === '' ? undefined : e.target.value === 'true')}
+                      >
+                        <option value="">All Statuses</option>
+                        <option value="false">Active Only</option>
+                        <option value="true">Completed Only</option>
+                      </select>
+                    </div>
+
+                    <div className="flex items-center space-x-2 ml-auto bg-gray-50 p-2 rounded-xl">
+                      <ArrowUpDown className="w-3 h-3 text-gray-400" />
+                      <select 
+                        className="bg-transparent text-[10px] font-black uppercase tracking-wider outline-none text-gray-500"
+                        value={sortBy}
+                        onChange={(e) => setSortBy(e.target.value)}
+                      >
+                        <option value="created_at">Date Created</option>
+                        <option value="title">Title</option>
+                        <option value="priority">Priority</option>
+                      </select>
+                      <button 
+                        onClick={() => setOrder(order === 'asc' ? 'desc' : 'asc')}
+                        className="p-1 hover:bg-gray-100 rounded-md transition-all text-gray-400 hover:text-horizon-300"
+                      >
+                        <span className="text-[10px] font-black">{order.toUpperCase()}</span>
+                      </button>
+                    </div>
+                  </div>
                 </div>
                 
                 <TaskList
-                  key={refreshTrigger}
+                  key={`${refreshTrigger}-${JSON.stringify(filters)}`}
+                  filters={filters}
                   onTaskUpdate={handleTaskDone}
                   onTaskDelete={handleTaskDone}
                 />
@@ -215,7 +320,7 @@ export default function DashboardPage() {
                   <h3 className="font-black text-gray-900">Current Focus</h3>
                 </div>
                 <p className="text-sm font-bold text-gray-600 leading-relaxed mb-6">
-                  "Finish the premium dashboard UI for the Horizon upgrade."
+                  "Implement Phase II: Search, Filtering, and Sorting."
                 </p>
                 <button className="w-full py-4 bg-accent text-white rounded-2xl font-black text-sm flex items-center justify-center group shadow-soft-float">
                   View Detail <ChevronRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />

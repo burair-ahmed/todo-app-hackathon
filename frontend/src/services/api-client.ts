@@ -1,5 +1,5 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
-import { Task, TaskCreate, TaskUpdate, AuthResponse, LoginRequest, RegisterRequest } from '../types';
+import { Task, TaskCreate, TaskUpdate, AuthResponse, LoginRequest, RegisterRequest, Tag } from '../types';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
@@ -36,6 +36,11 @@ class ApiClient {
     this.client.interceptors.response.use(
       (response) => response,
       (error) => {
+        console.error("API Error Interceptor:", {
+            status: error.response?.status,
+            data: error.response?.data,
+            headers: error.config?.headers
+        });
         if (error.response?.status === 401) {
           // Clear token and redirect to login
           this.clearToken();
@@ -83,8 +88,15 @@ class ApiClient {
   }
 
   // Task methods
-  async getTasks(): Promise<Task[]> {
-    const response = await this.client.get<Task[]>('/api/tasks');
+  async getTasks(params?: { 
+    search?: string; 
+    priority?: string; 
+    completed?: boolean; 
+    tag_id?: string;
+    sort_by?: string;
+    order?: string;
+  }): Promise<Task[]> {
+    const response = await this.client.get<Task[]>('/api/tasks', { params });
     return response.data;
   }
 
@@ -105,6 +117,21 @@ class ApiClient {
   async toggleTaskCompletion(taskId: string): Promise<Task> {
     const response = await this.client.put<Task>(`/api/tasks/${taskId}/toggle`);
     return response.data;
+  }
+
+  // Tag methods
+  async getTags(): Promise<Tag[]> {
+    const response = await this.client.get<Tag[]>('/api/tags');
+    return response.data;
+  }
+
+  async createTag(name: string): Promise<Tag> {
+    const response = await this.client.post<Tag>('/api/tags', { name });
+    return response.data;
+  }
+
+  async deleteTag(tagId: string): Promise<void> {
+    await this.client.delete(`/api/tags/${tagId}`);
   }
 
   // Check if user is authenticated

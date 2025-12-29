@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlmodel import Session
-from typing import List, Annotated
+from typing import List, Annotated, Optional
 from uuid import UUID
 from ..database.database import get_session
 from ..models.task import Task, TaskCreate, TaskRead, TaskUpdate, TaskPatch
@@ -13,18 +13,33 @@ from ..middleware.jwt_auth import get_current_user
 
 router = APIRouter(prefix="/api/tasks", tags=["tasks"])
 
-@router.get("/", response_model=List[TaskRead])
+@router.get("", response_model=List[TaskRead])
 def read_tasks(
+    search: Optional[str] = None,
+    priority: Optional[str] = None,
+    completed: Optional[bool] = None,
+    tag_id: Optional[UUID] = None,
+    sort_by: str = "created_at",
+    order: str = "desc",
     current_user: dict = Depends(get_current_user),
     session: Session = Depends(get_session)
 ):
-    """Get all tasks for the authenticated user."""
+    """Get all tasks for the authenticated user with search, filter, and sort support."""
     user_id = current_user["user_id"]
-    tasks = get_tasks_by_user(session, user_id)
+    tasks = get_tasks_by_user(
+        session, 
+        user_id, 
+        search=search, 
+        priority=priority, 
+        completed=completed, 
+        tag_id=tag_id,
+        sort_by=sort_by,
+        order=order
+    )
     return tasks
 
 
-@router.post("/", response_model=TaskRead)
+@router.post("", response_model=TaskRead)
 def create_task_endpoint(
     task_create: TaskCreate,
     current_user: dict = Depends(get_current_user),
