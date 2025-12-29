@@ -11,6 +11,7 @@ def create_task(session: Session, task_create: TaskCreate, user_id: UUID) -> Tas
         description=task_create.description,
         completed=task_create.completed,
         priority=task_create.priority,
+        label=task_create.label,
         user_id=user_id
     )
     
@@ -31,6 +32,7 @@ def get_tasks_by_user(
     priority: Optional[str] = None,
     completed: Optional[bool] = None,
     tag_id: Optional[UUID] = None,
+    label: Optional[str] = None,
     sort_by: str = "created_at",
     order: str = "desc"
 ) -> List[Task]:
@@ -53,6 +55,9 @@ def get_tasks_by_user(
 
     if tag_id:
         statement = statement.join(TaskTagLink).where(TaskTagLink.tag_id == tag_id)
+
+    if label:
+        statement = statement.where(Task.label == label)
 
     # Sorting logic
     sort_attr = getattr(Task, sort_by, Task.created_at)

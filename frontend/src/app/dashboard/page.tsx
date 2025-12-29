@@ -39,6 +39,7 @@ export default function DashboardPage() {
   const [filterPriority, setFilterPriority] = useState<string>('');
   const [filterTagId, setFilterTagId] = useState<string>('');
   const [filterCompleted, setFilterCompleted] = useState<boolean | undefined>(undefined);
+  const [filterLabel, setFilterLabel] = useState<string>('');
   const [sortBy, setSortBy] = useState<string>('created_at');
   const [order, setOrder] = useState<'asc' | 'desc'>('desc');
   const [allTags, setAllTags] = useState<Tag[]>([]);
@@ -80,9 +81,10 @@ export default function DashboardPage() {
     priority: filterPriority || undefined,
     completed: filterCompleted,
     tag_id: filterTagId || undefined,
+    label: filterLabel || undefined,
     sort_by: sortBy,
     order: order
-  }), [debouncedSearch, filterPriority, filterCompleted, filterTagId, sortBy, order]);
+  }), [debouncedSearch, filterPriority, filterCompleted, filterTagId, filterLabel, sortBy, order]);
 
   // Animation Variants
   const container = {
@@ -248,6 +250,18 @@ export default function DashboardPage() {
                         <option value="">All Statuses</option>
                         <option value="false">Active Only</option>
                         <option value="true">Completed Only</option>
+                      </select>
+                    </div>
+
+                    <div className="flex items-center space-x-2 bg-gray-50 p-2 rounded-xl">
+                      <select 
+                        className="bg-transparent text-[10px] font-black uppercase tracking-wider outline-none text-gray-500"
+                        value={filterLabel}
+                        onChange={(e) => setFilterLabel(e.target.value)}
+                      >
+                        <option value="">All Contexts</option>
+                        <option value="home">Home</option>
+                        <option value="work">Work</option>
                       </select>
                     </div>
 

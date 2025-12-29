@@ -22,6 +22,7 @@ export interface Task {
   description?: string;
   completed: boolean;
   priority: Priority;
+  label?: 'home' | 'work';
   tags: Tag[];
   user_id: string;
   created_at: string;
@@ -32,6 +33,7 @@ export interface TaskCreate {
   title: string;
   description?: string;
   priority?: Priority;
+  label?: 'home' | 'work';
   tag_ids?: string[];
 }
 
@@ -40,6 +42,7 @@ export interface TaskUpdate {
   description?: string;
   completed?: boolean;
   priority?: Priority;
+  label?: 'home' | 'work';
   tag_ids?: string[];
 }
 

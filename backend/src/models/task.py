@@ -10,6 +10,10 @@ class PriorityEnum(str, Enum):
     MEDIUM = "medium"
     HIGH = "high"
 
+class LabelEnum(str, Enum):
+    HOME = "home"
+    WORK = "work"
+
 class TaskTagLink(SQLModel, table=True):
     __tablename__ = "task_tag_links"
     task_id: uuid.UUID = Field(foreign_key="tasks.id", primary_key=True)
@@ -33,6 +37,10 @@ class TaskBase(SQLModel):
     priority: PriorityEnum = Field(
         default=PriorityEnum.MEDIUM,
         sa_column=Column(SAEnum(PriorityEnum, values_callable=lambda obj: [e.value for e in obj]))
+    )
+    label: Optional[LabelEnum] = Field(
+        default=None,
+        sa_column=Column(SAEnum(LabelEnum, values_callable=lambda obj: [e.value for e in obj], nullable=True))
     )
 
 class Task(TaskBase, table=True):
@@ -68,6 +76,8 @@ class TaskUpdate(SQLModel):
     description: Optional[str] = None
     completed: Optional[bool] = None
     priority: Optional[PriorityEnum] = None
+    label: Optional[LabelEnum] = None
+    label: Optional[LabelEnum] = None
     tag_ids: Optional[List[uuid.UUID]] = None
 
 class TaskPatch(SQLModel):

@@ -93,6 +93,7 @@ class ApiClient {
     priority?: string; 
     completed?: boolean; 
     tag_id?: string;
+    label?: string;
     sort_by?: string;
     order?: string;
   }): Promise<Task[]> {

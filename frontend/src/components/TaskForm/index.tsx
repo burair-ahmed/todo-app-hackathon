@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Task, Priority, Tag } from '../../types';
 import apiClient from '../../services/api-client';
 import { motion } from 'framer-motion';
-import { Save, X, Type, AlignLeft, Sparkles, Loader2, Flag, Hash, Plus } from 'lucide-react';
+import { Save, X, Type, AlignLeft, Sparkles, Loader2, Flag, Hash, Plus, Home, Briefcase } from 'lucide-react';
 
 interface TaskFormProps {
   onTaskCreated?: (task: Task) => void;
@@ -17,6 +17,7 @@ export default function TaskForm({ onTaskCreated, onTaskUpdated, taskToEdit, onC
   const [title, setTitle] = useState(taskToEdit?.title || '');
   const [description, setDescription] = useState(taskToEdit?.description || '');
   const [priority, setPriority] = useState<Priority>(taskToEdit?.priority || 'medium');
+  const [label, setLabel] = useState<'home' | 'work' | undefined>(taskToEdit?.label);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>(taskToEdit?.tags.map(t => t.id) || []);
   const [allTags, setAllTags] = useState<Tag[]>([]);
   const [newTagName, setNewTagName] = useState('');
@@ -71,6 +72,7 @@ export default function TaskForm({ onTaskCreated, onTaskUpdated, taskToEdit, onC
           title: title || undefined,
           description: description || undefined,
           priority,
+          label,
           tag_ids: selectedTagIds
         });
         if (onTaskUpdated) onTaskUpdated(updatedTask);
@@ -79,12 +81,14 @@ export default function TaskForm({ onTaskCreated, onTaskUpdated, taskToEdit, onC
           title, 
           description, 
           priority, 
+          label,
           tag_ids: selectedTagIds 
         });
         if (onTaskCreated) onTaskCreated(newTask);
         setTitle('');
         setDescription('');
         setPriority('medium');
+        setLabel(undefined);
         setSelectedTagIds([]);
       }
     } catch (err) {
@@ -121,28 +125,64 @@ export default function TaskForm({ onTaskCreated, onTaskUpdated, taskToEdit, onC
           </div>
         </div>
 
-        {/* Priority Selection */}
-        <div className="space-y-3">
-          <label className="flex items-center space-x-2 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 ml-2">
-            <Flag className="w-3 h-3" />
-            <span>Priority</span>
-          </label>
-          <div className="grid grid-cols-3 gap-4">
-            {(['low', 'medium', 'high'] as Priority[]).map((p) => (
-              <button
-                key={p}
-                type="button"
-                onClick={() => setPriority(p)}
-                className={`p-4 rounded-3xl border-2 transition-all font-black text-[10px] uppercase tracking-wider ${
-                  priority === p 
-                    ? 'border-horizon-400 bg-horizon-50 text-horizon-600' 
-                    : 'border-transparent bg-gray-50 text-gray-400 hover:bg-gray-100'
-                }`}
-              >
-                {p}
-              </button>
-            ))}
-          </div>
+        <div className="grid grid-cols-1 gap-6">
+            {/* Priority Selection */}
+            <div className="space-y-3">
+              <label className="flex items-center space-x-2 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 ml-2">
+                <Flag className="w-3 h-3" />
+                <span>Priority</span>
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                {(['low', 'medium', 'high'] as Priority[]).map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => setPriority(p)}
+                    className={`p-3 rounded-2xl border-2 transition-all font-black text-[10px] uppercase tracking-wider ${
+                      priority === p 
+                        ? 'border-horizon-400 bg-horizon-50 text-horizon-600' 
+                        : 'border-transparent bg-gray-50 text-gray-400 hover:bg-gray-100'
+                    }`}
+                  >
+                    {p}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Label Selection */}
+            <div className="space-y-3">
+              <label className="flex items-center space-x-2 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 ml-2">
+                <Briefcase className="w-3 h-3" />
+                <span>Context</span>
+              </label>
+              <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setLabel(label === 'work' ? undefined : 'work')}
+                    className={`p-3 rounded-2xl border-2 transition-all font-bold text-xs flex items-center justify-center space-x-2 ${
+                      label === 'work'
+                        ? 'border-blue-400 bg-blue-50 text-blue-600' 
+                        : 'border-transparent bg-gray-50 text-gray-400 hover:bg-gray-100'
+                    }`}
+                  >
+                    <Briefcase className="w-4 h-4" />
+                    <span>WORK</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setLabel(label === 'home' ? undefined : 'home')}
+                    className={`p-3 rounded-2xl border-2 transition-all font-bold text-xs flex items-center justify-center space-x-2 ${
+                      label === 'home'
+                        ? 'border-purple-400 bg-purple-50 text-purple-600' 
+                        : 'border-transparent bg-gray-50 text-gray-400 hover:bg-gray-100'
+                    }`}
+                  >
+                    <Home className="w-4 h-4" />
+                    <span>HOME</span>
+                  </button>
+              </div>
+            </div>
         </div>
 
         {/* Description Input */}

@@ -13,7 +13,9 @@ import {
   Clock, 
   MoreHorizontal,
   ChevronRight,
-  Loader2
+  Loader2,
+  Home,
+  Briefcase
 } from 'lucide-react';
 
 interface TaskListProps {
@@ -141,6 +143,15 @@ export default function TaskList({ onTaskUpdate, onTaskDelete, filters }: TaskLi
                     <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border transition-all duration-500 ${priorityColors[task.priority]}`}>
                       {task.priority}
                     </span>
+                    {task.label && (
+                      <span className={`px-2 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider border flex items-center gap-1
+                        ${task.label === 'home' 
+                          ? 'bg-purple-50 text-purple-600 border-purple-100' 
+                          : 'bg-blue-50 text-blue-600 border-blue-100'}`}>
+                        {task.label === 'home' ? <Home className="w-3 h-3" /> : <Briefcase className="w-3 h-3" />}
+                        {task.label}
+                      </span>
+                    )}
                     {task.completed && (
                       <span className="bg-green-50 text-green-600 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border border-green-100">
                         Completed

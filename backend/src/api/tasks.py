@@ -19,6 +19,7 @@ def read_tasks(
     priority: Optional[str] = None,
     completed: Optional[bool] = None,
     tag_id: Optional[UUID] = None,
+    label: Optional[str] = None,
     sort_by: str = "created_at",
     order: str = "desc",
     current_user: dict = Depends(get_current_user),
@@ -33,6 +34,7 @@ def read_tasks(
         priority=priority, 
         completed=completed, 
         tag_id=tag_id,
+        label=label,
         sort_by=sort_by,
         order=order
     )

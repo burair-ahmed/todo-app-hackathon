@@ -1,8 +1,11 @@
-'use client';
-
 import './globals.css';
-import { AuthProvider } from '../services/auth-service';
 import { ReactNode } from 'react';
+import { ClientProviders } from '../components/ClientProviders';
+
+export const metadata = {
+  title: 'Horizon Todo',
+  description: 'Control your objectives with speed and style.',
+};
 
 export default function RootLayout({
   children,
@@ -13,11 +16,9 @@ export default function RootLayout({
     <html lang="en">
       <body className="min-h-screen selection:bg-horizon-200/30">
         <div className="bg-horizon-mesh" />
-        <AuthProvider>
-          <div className="relative min-h-screen">
-            {children}
-          </div>
-        </AuthProvider>
+        <ClientProviders>
+          {children}
+        </ClientProviders>
       </body>
     </html>
   );
