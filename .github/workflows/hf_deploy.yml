@@ -1,0 +1,30 @@
+name: Sync Backend to Hugging Face Hub
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'backend/**'
+      - '.github/workflows/hf_deploy.yml'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Push to Hugging Face
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_SPACE_ID: ${{ secrets.HF_SPACE_ID }}
+        run: |
+          # Configure Git
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name "github-actions[bot]"
+          
+          # Use git subtree to extract the backend folder into a temporary branch
+          # This pushes only the CONTENTS of the backend folder to the root of the destination
+          git subtree push --prefix backend https://burair-ahmed:$HF_TOKEN@huggingface.co/spaces/$HF_SPACE_ID main

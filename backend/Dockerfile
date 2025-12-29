@@ -19,8 +19,8 @@ RUN pip install --no-cache-dir --upgrade -r requirements.txt
 # Copy application code
 COPY . .
 
-# Expose port
-EXPOSE 8000
+# Expose port (Hugging Face Spaces requirement: 7860)
+EXPOSE 7860
 
 # Run the application
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "7860"]
