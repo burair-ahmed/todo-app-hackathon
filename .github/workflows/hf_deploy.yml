@@ -25,6 +25,7 @@ jobs:
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git config --global user.name "github-actions[bot]"
           
-          # Use git subtree to extract the backend folder into a temporary branch
-          # This pushes only the CONTENTS of the backend folder to the root of the destination
-          git subtree push --prefix backend https://burair-ahmed:$HF_TOKEN@huggingface.co/spaces/$HF_SPACE_ID main
+          # Force push the backend folder content
+          # Since git subtree push doesn't support --force, we split then push --force
+          git subtree split --prefix backend -b hf-deploy
+          git push https://burair-ahmed:$HF_TOKEN@huggingface.co/spaces/$HF_SPACE_ID hf-deploy:main --force
