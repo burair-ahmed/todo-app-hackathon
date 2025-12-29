@@ -7,6 +7,7 @@ import apiClient from '../../services/api-client';
 import ProtectedRoute from '../../components/ProtectedRoute';
 import TaskForm from '../../components/TaskForm';
 import TaskList from '../../components/TaskList';
+import FilterDropdown from '../../components/FilterDropdown';
 import { Task, Tag } from '../../types';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -23,7 +24,13 @@ import {
   TrendingUp,
   Settings,
   Filter,
-  ArrowUpDown
+  ArrowUpDown,
+  Home,
+  Briefcase,
+  Layers,
+  Flag,
+  SortAsc,
+  SortDesc
 } from 'lucide-react';
 
 export default function DashboardPage() {
@@ -212,75 +219,76 @@ export default function DashboardPage() {
                     </span>
                   </div>
 
-                  {/* Phase II: Filters & Sorting Bar */}
-                  <div className="flex flex-wrap items-center gap-3 pt-4 border-t border-gray-50">
-                    <div className="flex items-center space-x-2 bg-gray-50 p-2 rounded-xl">
-                      <Filter className="w-3 h-3 text-gray-400" />
-                      <select 
-                        className="bg-transparent text-[10px] font-black uppercase tracking-wider outline-none text-gray-500"
-                        value={filterPriority}
-                        onChange={(e) => setFilterPriority(e.target.value)}
-                      >
-                        <option value="">All Priorities</option>
-                        <option value="low">Low</option>
-                        <option value="medium">Medium</option>
-                        <option value="high">High</option>
-                      </select>
-                    </div>
+                  {/* Modernized Filters & Sorting Bar */}
+                  <div className="flex flex-wrap items-center gap-3 pt-6 border-t border-gray-100">
+                    <FilterDropdown
+                      label="All Priorities"
+                      icon={<Flag className="w-3.5 h-3.5" />}
+                      value={filterPriority}
+                      onChange={setFilterPriority}
+                      options={[
+                        { label: 'All Priorities', value: '' },
+                        { label: 'High', value: 'high', icon: <div className="w-2 h-2 rounded-full bg-red-500" /> },
+                        { label: 'Medium', value: 'medium', icon: <div className="w-2 h-2 rounded-full bg-orange-500" /> },
+                        { label: 'Low', value: 'low', icon: <div className="w-2 h-2 rounded-full bg-blue-500" /> }
+                      ]}
+                    />
 
-                    <div className="flex items-center space-x-2 bg-gray-50 p-2 rounded-xl">
-                      <select 
-                        className="bg-transparent text-[10px] font-black uppercase tracking-wider outline-none text-gray-500"
-                        value={filterTagId}
-                        onChange={(e) => setFilterTagId(e.target.value)}
-                      >
-                        <option value="">All Tags</option>
-                        {allTags.map(tag => (
-                          <option key={tag.id} value={tag.id}>{tag.name}</option>
-                        ))}
-                      </select>
-                    </div>
+                    <FilterDropdown
+                      label="All Tags"
+                      icon={<Layers className="w-3.5 h-3.5" />}
+                      value={filterTagId}
+                      onChange={setFilterTagId}
+                      options={[
+                        { label: 'All Tags', value: '' },
+                        ...allTags.map(tag => ({ label: tag.name, value: tag.id }))
+                      ]}
+                    />
 
-                    <div className="flex items-center space-x-2 bg-gray-50 p-2 rounded-xl">
-                      <select 
-                        className="bg-transparent text-[10px] font-black uppercase tracking-wider outline-none text-gray-500"
-                        value={filterCompleted === undefined ? '' : filterCompleted.toString()}
-                        onChange={(e) => setFilterCompleted(e.target.value === '' ? undefined : e.target.value === 'true')}
-                      >
-                        <option value="">All Statuses</option>
-                        <option value="false">Active Only</option>
-                        <option value="true">Completed Only</option>
-                      </select>
-                    </div>
+                    <FilterDropdown
+                      label="All Statuses"
+                      icon={<CheckCircle2 className="w-3.5 h-3.5" />}
+                      value={filterCompleted === undefined ? '' : filterCompleted.toString()}
+                      onChange={(val) => setFilterCompleted(val === '' ? undefined : val === 'true')}
+                      options={[
+                        { label: 'All Statuses', value: '' },
+                        { label: 'Active Only', value: 'false' },
+                        { label: 'Completed Only', value: 'true' }
+                      ]}
+                    />
 
-                    <div className="flex items-center space-x-2 bg-gray-50 p-2 rounded-xl">
-                      <select 
-                        className="bg-transparent text-[10px] font-black uppercase tracking-wider outline-none text-gray-500"
-                        value={filterLabel}
-                        onChange={(e) => setFilterLabel(e.target.value)}
-                      >
-                        <option value="">All Contexts</option>
-                        <option value="home">Home</option>
-                        <option value="work">Work</option>
-                      </select>
-                    </div>
+                    <FilterDropdown
+                      label="Context"
+                      icon={<Home className="w-3.5 h-3.5" />}
+                      value={filterLabel}
+                      onChange={setFilterLabel}
+                      options={[
+                        { label: 'All Contexts', value: '' },
+                        { label: 'Home', value: 'home', icon: <Home className="w-3 h-3 text-purple-500" /> },
+                        { label: 'Work', value: 'work', icon: <Briefcase className="w-3 h-3 text-blue-500" /> }
+                      ]}
+                    />
 
-                    <div className="flex items-center space-x-2 ml-auto bg-gray-50 p-2 rounded-xl">
-                      <ArrowUpDown className="w-3 h-3 text-gray-400" />
-                      <select 
-                        className="bg-transparent text-[10px] font-black uppercase tracking-wider outline-none text-gray-500"
+                    <div className="flex items-center ml-auto space-x-2">
+                       <FilterDropdown
+                        label="Sort By"
+                        icon={<ArrowUpDown className="w-3.5 h-3.5" />}
                         value={sortBy}
-                        onChange={(e) => setSortBy(e.target.value)}
-                      >
-                        <option value="created_at">Date Created</option>
-                        <option value="title">Title</option>
-                        <option value="priority">Priority</option>
-                      </select>
+                        onChange={setSortBy}
+                        options={[
+                          { label: 'Recently Created', value: 'created_at' },
+                          { label: 'Alphabetical', value: 'title' },
+                          { label: 'Priority Level', value: 'priority' }
+                        ]}
+                      />
                       <button 
                         onClick={() => setOrder(order === 'asc' ? 'desc' : 'asc')}
-                        className="p-1 hover:bg-gray-100 rounded-md transition-all text-gray-400 hover:text-horizon-300"
+                        className={`p-2.5 rounded-2xl transition-all shadow-sm border-2
+                          ${order === 'desc' 
+                            ? 'bg-horizon-900 text-white border-horizon-900 shadow-soft-float' 
+                            : 'bg-white text-gray-400 border-gray-100 hover:border-gray-200'}`}
                       >
-                        <span className="text-[10px] font-black">{order.toUpperCase()}</span>
+                        {order === 'desc' ? <SortDesc className="w-4 h-4" /> : <SortAsc className="w-4 h-4" />}
                       </button>
                     </div>
                   </div>
