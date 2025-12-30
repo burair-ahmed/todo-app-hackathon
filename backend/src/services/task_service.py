@@ -1,6 +1,7 @@
 from sqlmodel import Session, select, or_, desc
 from typing import List, Optional
 from uuid import UUID
+from datetime import timedelta
 from ..models.task import Task, TaskCreate, TaskUpdate, TaskPatch, Tag, TaskTagLink
 from ..models.user import User
 
@@ -12,6 +13,8 @@ def create_task(session: Session, task_create: TaskCreate, user_id: UUID) -> Tas
         completed=task_create.completed,
         priority=task_create.priority,
         label=task_create.label,
+        due_date=task_create.due_date,
+        recurrence=task_create.recurrence,
         user_id=user_id
     )
     
@@ -124,12 +127,38 @@ def delete_task(session: Session, task_id: UUID, user_id: UUID) -> bool:
     return True
 
 def toggle_task_completion(session: Session, task_id: UUID, user_id: UUID) -> Optional[Task]:
-    """Toggle the completion status of a specific task for a user."""
+    """Toggle the completion status of a specific task with recurrence logic."""
     task = get_task_by_id(session, task_id, user_id)
     if not task:
         return None
 
-    task.completed = not task.completed
+    from ..models.task import RecurrenceEnum
+    
+    # If task is currently being marked as completed (from False to True)
+    if not task.completed:
+        if task.recurrence and task.recurrence != RecurrenceEnum.NONE:
+            # Reschedule if it has a due date
+            if task.due_date:
+                if task.recurrence == RecurrenceEnum.DAILY:
+                    task.due_date = task.due_date + timedelta(days=1)
+                elif task.recurrence == RecurrenceEnum.WEEKLY:
+                    task.due_date = task.due_date + timedelta(weeks=1)
+                elif task.recurrence == RecurrenceEnum.MONTHLY:
+                    # Approximation: 30 days. For production, use relativedelta
+                    task.due_date = task.due_date + timedelta(days=30)
+                
+                # We don't mark it completed, just reschedule it
+                # Effectively, it stays in the list with a new date
+                task.completed = False 
+            else:
+                # No due date? Just mark as completed
+                task.completed = True
+        else:
+            task.completed = True
+    else:
+        # Marking a completed task back to uncompleted
+        task.completed = False
+
     session.add(task)
     session.commit()
     session.refresh(task)

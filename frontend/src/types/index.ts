@@ -9,6 +9,7 @@ export interface User {
 }
 
 export type Priority = 'low' | 'medium' | 'high';
+export type Recurrence = 'none' | 'daily' | 'weekly' | 'monthly';
 
 export interface Tag {
   id: string;
@@ -23,6 +24,8 @@ export interface Task {
   completed: boolean;
   priority: Priority;
   label?: 'home' | 'work';
+  due_date?: string;
+  recurrence: Recurrence;
   tags: Tag[];
   user_id: string;
   created_at: string;
@@ -34,6 +37,8 @@ export interface TaskCreate {
   description?: string;
   priority?: Priority;
   label?: 'home' | 'work';
+  due_date?: string;
+  recurrence?: Recurrence;
   tag_ids?: string[];
 }
 
@@ -43,6 +48,8 @@ export interface TaskUpdate {
   completed?: boolean;
   priority?: Priority;
   label?: 'home' | 'work';
+  due_date?: string;
+  recurrence?: Recurrence;
   tag_ids?: string[];
 }
 

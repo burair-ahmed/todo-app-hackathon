@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { Task, Priority, Tag } from '../../types';
 import apiClient from '../../services/api-client';
 import { motion } from 'framer-motion';
-import { Save, X, Type, AlignLeft, Sparkles, Loader2, Flag, Hash, Plus, Home, Briefcase } from 'lucide-react';
+import { Save, X, Type, AlignLeft, Sparkles, Loader2, Flag, Hash, Plus, Home, Briefcase, Calendar, RotateCcw } from 'lucide-react';
 
 interface TaskFormProps {
   onTaskCreated?: (task: Task) => void;
@@ -21,6 +21,8 @@ export default function TaskForm({ onTaskCreated, onTaskUpdated, taskToEdit, onC
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>(taskToEdit?.tags.map(t => t.id) || []);
   const [allTags, setAllTags] = useState<Tag[]>([]);
   const [newTagName, setNewTagName] = useState('');
+  const [dueDate, setDueDate] = useState(taskToEdit?.due_date ? new Date(taskToEdit.due_date).toISOString().slice(0, 16) : '');
+  const [recurrence, setRecurrence] = useState<string>(taskToEdit?.recurrence || 'none');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -73,6 +75,8 @@ export default function TaskForm({ onTaskCreated, onTaskUpdated, taskToEdit, onC
           description: description || undefined,
           priority,
           label,
+          due_date: dueDate || undefined,
+          recurrence: recurrence as any,
           tag_ids: selectedTagIds
         });
         if (onTaskUpdated) onTaskUpdated(updatedTask);
@@ -82,6 +86,8 @@ export default function TaskForm({ onTaskCreated, onTaskUpdated, taskToEdit, onC
           description, 
           priority, 
           label,
+          due_date: dueDate || undefined,
+          recurrence: recurrence as any,
           tag_ids: selectedTagIds 
         });
         if (onTaskCreated) onTaskCreated(newTask);
@@ -89,6 +95,8 @@ export default function TaskForm({ onTaskCreated, onTaskUpdated, taskToEdit, onC
         setDescription('');
         setPriority('medium');
         setLabel(undefined);
+        setDueDate('');
+        setRecurrence('none');
         setSelectedTagIds([]);
       }
     } catch (err) {
@@ -181,6 +189,49 @@ export default function TaskForm({ onTaskCreated, onTaskUpdated, taskToEdit, onC
                     <Home className="w-4 h-4" />
                     <span>HOME</span>
                   </button>
+              </div>
+            </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Due Date Input */}
+            <div className="space-y-3">
+              <label className="flex items-center space-x-2 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 ml-2">
+                <Calendar className="w-3 h-3 text-horizon-300" />
+                <span>Deadline Horizon</span>
+              </label>
+              <div className="relative group">
+                <input
+                  type="datetime-local"
+                  value={dueDate}
+                  onChange={(e) => setDueDate(e.target.value)}
+                  className="input-horizon w-full pr-12 appearance-none cursor-pointer"
+                  style={{ colorScheme: 'light' }}
+                />
+                <Calendar className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-horizon-200 group-hover:text-horizon-400 pointer-events-none transition-colors" />
+              </div>
+            </div>
+
+            {/* Recurrence Selection */}
+            <div className="space-y-3">
+              <label className="flex items-center space-x-2 text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 ml-2">
+                <RotateCcw className="w-3 h-3 text-horizon-300" />
+                <span>Repeat Frequency</span>
+              </label>
+              <div className="relative group">
+                <select
+                  value={recurrence}
+                  onChange={(e) => setRecurrence(e.target.value)}
+                  className="input-horizon w-full appearance-none cursor-pointer pr-12 text-sm font-bold"
+                >
+                  <option value="none">Discrete Task (No Repeat)</option>
+                  <option value="daily">Daily Loop</option>
+                  <option value="weekly">Weekly Cycle</option>
+                  <option value="monthly">Monthly Phase</option>
+                </select>
+                <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-horizon-200 group-hover:text-horizon-400 transition-colors">
+                  <RotateCcw className="w-5 h-5" />
+                </div>
               </div>
             </div>
         </div>

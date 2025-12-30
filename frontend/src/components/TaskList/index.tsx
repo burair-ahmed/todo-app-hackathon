@@ -15,7 +15,9 @@ import {
   ChevronRight,
   Loader2,
   Home,
-  Briefcase
+  Briefcase,
+  Calendar,
+  RotateCcw
 } from 'lucide-react';
 
 interface TaskListProps {
@@ -157,13 +159,29 @@ export default function TaskList({ onTaskUpdate, onTaskDelete, filters }: TaskLi
                         Completed
                       </span>
                     )}
+                    {task.recurrence && task.recurrence !== 'none' && (
+                      <span className="bg-horizon-50 text-horizon-600 text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full border border-horizon-100 flex items-center gap-1">
+                        <RotateCcw className="w-2.5 h-2.5" />
+                        {task.recurrence}
+                      </span>
+                    )}
                   </div>
                 </div>
-                {task.description && (
-                  <p className={`text-sm font-medium mt-1 truncate max-w-sm
-                              ${task.completed ? 'text-gray-300' : 'text-gray-500'}`}>
-                    {task.description}
-                  </p>
+                {(task.due_date || task.description) && (
+                  <div className="mt-1 space-y-1">
+                    {task.due_date && (
+                      <div className={`flex items-center gap-1.5 text-[10px] font-bold ${task.completed ? 'text-gray-300' : 'text-horizon-500'}`}>
+                        <Calendar className="w-3 h-3" />
+                        <span>Due: {new Date(task.due_date).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' })}</span>
+                      </div>
+                    )}
+                    {task.description && (
+                      <p className={`text-sm font-medium truncate max-w-sm
+                                  ${task.completed ? 'text-gray-300' : 'text-gray-500'}`}>
+                        {task.description}
+                      </p>
+                    )}
+                  </div>
                 )}
                 {task.tags && task.tags.length > 0 && (
                   <div className="flex flex-wrap gap-2 mt-3">

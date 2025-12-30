@@ -14,6 +14,12 @@ class LabelEnum(str, Enum):
     HOME = "home"
     WORK = "work"
 
+class RecurrenceEnum(str, Enum):
+    NONE = "none"
+    DAILY = "daily"
+    WEEKLY = "weekly"
+    MONTHLY = "monthly"
+
 class TaskTagLink(SQLModel, table=True):
     __tablename__ = "task_tag_links"
     task_id: uuid.UUID = Field(foreign_key="tasks.id", primary_key=True)
@@ -41,6 +47,11 @@ class TaskBase(SQLModel):
     label: Optional[LabelEnum] = Field(
         default=None,
         sa_column=Column(SAEnum(LabelEnum, values_callable=lambda obj: [e.value for e in obj], nullable=True))
+    )
+    due_date: Optional[datetime] = Field(default=None)
+    recurrence: RecurrenceEnum = Field(
+        default=RecurrenceEnum.NONE,
+        sa_column=Column(SAEnum(RecurrenceEnum, values_callable=lambda obj: [e.value for e in obj]))
     )
 
 class Task(TaskBase, table=True):
@@ -77,7 +88,8 @@ class TaskUpdate(SQLModel):
     completed: Optional[bool] = None
     priority: Optional[PriorityEnum] = None
     label: Optional[LabelEnum] = None
-    label: Optional[LabelEnum] = None
+    due_date: Optional[datetime] = None
+    recurrence: Optional[RecurrenceEnum] = None
     tag_ids: Optional[List[uuid.UUID]] = None
 
 class TaskPatch(SQLModel):
@@ -85,3 +97,6 @@ class TaskPatch(SQLModel):
     description: Optional[str] = None
     completed: Optional[bool] = None
     priority: Optional[PriorityEnum] = None
+    label: Optional[LabelEnum] = None
+    due_date: Optional[datetime] = None
+    recurrence: Optional[RecurrenceEnum] = None
