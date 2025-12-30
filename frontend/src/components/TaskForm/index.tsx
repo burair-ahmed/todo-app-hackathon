@@ -205,10 +205,21 @@ export default function TaskForm({ onTaskCreated, onTaskUpdated, taskToEdit, onC
                   type="datetime-local"
                   value={dueDate}
                   onChange={(e) => setDueDate(e.target.value)}
-                  className="input-horizon w-full pr-12 appearance-none cursor-pointer"
+                  className="input-horizon w-full pr-12 appearance-none cursor-pointer text-gray-700 font-bold"
                   style={{ colorScheme: 'light' }}
+                  onClick={(e) => (e.target as HTMLInputElement).showPicker()}
                 />
-                <Calendar className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-horizon-200 group-hover:text-horizon-400 pointer-events-none transition-colors" />
+                <div 
+                  className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-horizon-200 group-hover:text-horizon-400 transition-colors"
+                >
+                   <Calendar className="w-5 h-5" />
+                </div>
+                <style jsx>{`
+                  input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+                    display: none;
+                    -webkit-appearance: none;
+                  }
+                `}</style>
               </div>
             </div>
 
@@ -222,7 +233,7 @@ export default function TaskForm({ onTaskCreated, onTaskUpdated, taskToEdit, onC
                 <select
                   value={recurrence}
                   onChange={(e) => setRecurrence(e.target.value)}
-                  className="input-horizon w-full appearance-none cursor-pointer pr-12 text-sm font-bold"
+                  className="input-horizon w-full appearance-none cursor-pointer pr-12 text-sm font-bold text-gray-700"
                 >
                   <option value="none">Discrete Task (No Repeat)</option>
                   <option value="daily">Daily Loop</option>

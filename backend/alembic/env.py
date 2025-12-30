@@ -13,6 +13,7 @@ sys.path.insert(0, os.path.realpath(os.path.join(os.path.dirname(__file__), '..'
 from src.config import settings
 from src.models.user import User
 from src.models.task import Task
+from src.models.notification import Notification
 from sqlmodel import SQLModel
 
 # this is the Alembic Config object, which provides

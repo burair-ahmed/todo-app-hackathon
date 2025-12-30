@@ -25,6 +25,7 @@ export interface Task {
   priority: Priority;
   label?: 'home' | 'work';
   due_date?: string;
+  completed_at?: string;
   recurrence: Recurrence;
   tags: Tag[];
   user_id: string;

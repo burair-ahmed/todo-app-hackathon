@@ -8,6 +8,7 @@ import ProtectedRoute from '../../components/ProtectedRoute';
 import TaskForm from '../../components/TaskForm';
 import TaskList from '../../components/TaskList';
 import FilterDropdown from '../../components/FilterDropdown';
+import NotificationCenter from '../../components/NotificationCenter';
 import { Task, Tag } from '../../types';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -189,6 +190,9 @@ export default function DashboardPage() {
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
+              
+              <NotificationCenter />
+
               <button 
                 onClick={() => setIsAddingTask(true)}
                 className="bg-horizon-900 text-white p-3.5 rounded-2xl shadow-soft-float hover:scale-110 active:scale-95 transition-all"

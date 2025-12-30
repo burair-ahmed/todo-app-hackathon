@@ -40,6 +40,7 @@ class TaskBase(SQLModel):
     title: str = Field(min_length=1, max_length=200)
     description: Optional[str] = Field(default=None, max_length=1000)
     completed: bool = Field(default=False)
+    completed_at: Optional[datetime] = Field(default=None)
     priority: PriorityEnum = Field(
         default=PriorityEnum.MEDIUM,
         sa_column=Column(SAEnum(PriorityEnum, values_callable=lambda obj: [e.value for e in obj]))
@@ -53,6 +54,7 @@ class TaskBase(SQLModel):
         default=RecurrenceEnum.NONE,
         sa_column=Column(SAEnum(RecurrenceEnum, values_callable=lambda obj: [e.value for e in obj]))
     )
+    recurrence_group_id: Optional[uuid.UUID] = Field(default=None)
 
 class Task(TaskBase, table=True):
     __tablename__ = "tasks"
@@ -86,17 +88,21 @@ class TaskUpdate(SQLModel):
     title: Optional[str] = None
     description: Optional[str] = None
     completed: Optional[bool] = None
+    completed_at: Optional[datetime] = None
     priority: Optional[PriorityEnum] = None
     label: Optional[LabelEnum] = None
     due_date: Optional[datetime] = None
     recurrence: Optional[RecurrenceEnum] = None
+    recurrence_group_id: Optional[uuid.UUID] = None
     tag_ids: Optional[List[uuid.UUID]] = None
 
 class TaskPatch(SQLModel):
     title: Optional[str] = None
     description: Optional[str] = None
     completed: Optional[bool] = None
+    completed_at: Optional[datetime] = None
     priority: Optional[PriorityEnum] = None
     label: Optional[LabelEnum] = None
     due_date: Optional[datetime] = None
     recurrence: Optional[RecurrenceEnum] = None
+    recurrence_group_id: Optional[uuid.UUID] = None

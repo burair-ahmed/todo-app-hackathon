@@ -135,6 +135,26 @@ class ApiClient {
     await this.client.delete(`/api/tags/${tagId}`);
   }
 
+  // Notification methods
+  async getNotifications(skip = 0, limit = 20): Promise<any[]> {
+    const response = await this.client.get<any[]>('/api/notifications', { params: { skip, limit } });
+    return response.data;
+  }
+
+  async getUnreadNotificationsCount(): Promise<number> {
+    const response = await this.client.get<number>('/api/notifications/unread-count');
+    return response.data;
+  }
+
+  async markNotificationAsRead(notificationId: string): Promise<any> {
+    const response = await this.client.post<any>(`/api/notifications/${notificationId}/read`);
+    return response.data;
+  }
+
+  async markAllNotificationsAsRead(): Promise<void> {
+    await this.client.post('/api/notifications/read-all');
+  }
+
   // Check if user is authenticated
   isAuthenticated(): boolean {
     return this.getToken() !== null;

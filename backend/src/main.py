@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from .api.auth import router as auth_router
 from .api.tasks import router as tasks_router
 from .api.tags import router as tags_router
+from .api.notifications import router as notifications_router
 from .config import settings
 import logging
 
@@ -59,6 +60,7 @@ async def log_requests(request, call_next):
 app.include_router(auth_router)
 app.include_router(tasks_router)
 app.include_router(tags_router)
+app.include_router(notifications_router)
 
 @app.get("/")
 def read_root():
