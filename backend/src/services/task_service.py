@@ -45,7 +45,7 @@ def get_tasks_by_user(
 ) -> List[Task]:
     """Get all tasks for a specific user with advanced filtering and sorting."""
     # Check for missing recurring tasks (auto-spawn)
-    spawn_missing_recurring_tasks(session, user_id)
+    # Note: Recurring task spawning is now handled in background tasks by the API endpoint
     
     statement = select(Task).where(Task.user_id == user_id)
     
@@ -355,3 +355,24 @@ def spawn_missing_recurring_tasks(session: Session, user_id: UUID) -> None:
             
     if session.new:
         session.commit()
+
+from ..database.database import engine
+from sqlmodel import Session
+
+def run_spawn_recurring_tasks_background(user_id: UUID):
+    """
+    Background worker to spawn recurring tasks.
+    Creates its own session to ensure isolation from the request lifecycle.
+    OPTIMIZED: Checks debounce cache BEFORE creating session to save resources.
+    """
+    try:
+        # Check debounce BEFORE opening session
+        now_utc = datetime.utcnow()
+        last_check = _last_recurrence_check.get(user_id)
+        if last_check and (now_utc - last_check) < timedelta(minutes=1):
+            return
+
+        with Session(engine) as session:
+            spawn_missing_recurring_tasks(session, user_id)
+    except Exception as e:
+        print(f"BACKGROUND WORKER ERROR (spawn_recurring): {e}")

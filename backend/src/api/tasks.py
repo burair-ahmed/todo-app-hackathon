@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, BackgroundTasks
 from sqlmodel import Session
 from typing import List, Annotated, Optional
 from uuid import UUID
@@ -7,7 +7,7 @@ from ..models.task import Task, TaskCreate, TaskRead, TaskUpdate, TaskPatch
 from ..models.user import User
 from ..services.task_service import (
     create_task, get_tasks_by_user, get_task_by_id,
-    update_task, patch_task, delete_task, toggle_task_completion
+    update_task, patch_task, delete_task, toggle_task_completion, run_spawn_recurring_tasks_background
 )
 from ..middleware.jwt_auth import get_current_user
 
@@ -15,6 +15,7 @@ router = APIRouter(prefix="/api/tasks", tags=["tasks"])
 
 @router.get("", response_model=List[TaskRead])
 def read_tasks(
+    background_tasks: BackgroundTasks,
     search: Optional[str] = None,
     priority: Optional[str] = None,
     completed: Optional[bool] = None,
@@ -27,6 +28,10 @@ def read_tasks(
 ):
     """Get all tasks for the authenticated user with search, filter, and sort support."""
     user_id = current_user["user_id"]
+    
+    # Offload recurrence check to background task
+    background_tasks.add_task(run_spawn_recurring_tasks_background, user_id)
+    
     tasks = get_tasks_by_user(
         session, 
         user_id, 
