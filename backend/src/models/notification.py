@@ -5,11 +5,11 @@ from typing import Optional
 from sqlmodel import Field, SQLModel
 
 class NotificationType(str, Enum):
-    TASK_DUE = "task_due"
-    TASK_OVERDUE = "task_overdue"
-    RECURRING_SPAWNED = "recurring_spawned"
-    TASK_DUE_SOON = "task_due_soon"
-    GENERAL = "general"
+    TASK_DUE = "TASK_DUE"
+    TASK_OVERDUE = "TASK_OVERDUE"
+    RECURRING_SPAWNED = "RECURRING_SPAWNED"
+    TASK_DUE_SOON = "TASK_DUE_SOON"
+    GENERAL = "GENERAL"
 
 class NotificationBase(SQLModel):
     user_id: uuid.UUID = Field(foreign_key="users.id")

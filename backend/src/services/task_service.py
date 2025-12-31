@@ -2,7 +2,7 @@ from sqlmodel import Session, select, or_, desc
 from sqlalchemy.orm import selectinload
 from typing import List, Optional, Dict
 from uuid import UUID
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from ..models.task import Task, TaskCreate, TaskUpdate, TaskPatch, Tag, TaskTagLink, RecurrenceEnum
 from ..models.notification import Notification, NotificationType # Fixed import
 from sqlalchemy import func
@@ -145,7 +145,7 @@ def toggle_task_completion(session: Session, task_id: UUID, user_id: UUID) -> Op
     # If task is currently being marked as completed (from False to True)
     if not task.completed:
         task.completed = True
-        task.completed_at = datetime.utcnow()
+        task.completed_at = datetime.now(timezone.utc)
         
         # Check for recurrence to spawn a NEW task
         if task.recurrence and task.recurrence != RecurrenceEnum.NONE:
@@ -237,7 +237,7 @@ def spawn_missing_recurring_tasks(session: Session, user_id: UUID) -> None:
     """
     global _last_recurrence_check
     
-    now_utc = datetime.utcnow()
+    now_utc = datetime.now(timezone.utc)
     last_check = _last_recurrence_check.get(user_id)
     
     # Debounce: If checked in last 1 minutes, skip (to allow UI to load fast)
@@ -266,7 +266,7 @@ def spawn_missing_recurring_tasks(session: Session, user_id: UUID) -> None:
         gid = task.recurrence_group_id if task.recurrence_group_id else task.id
         groups[gid].append(task)
         
-    start_of_today = datetime.utcnow().replace(hour=0, minute=0, second=0, microsecond=0)
+    start_of_today = datetime.now(timezone.utc).replace(hour=0, minute=0, second=0, microsecond=0)
     
     # 3. Check each group's latest task
     for gid, group_tasks in groups.items():
@@ -374,7 +374,7 @@ def run_spawn_recurring_tasks_background(user_id: UUID):
     """
     try:
         # Check debounce BEFORE opening session
-        now_utc = datetime.utcnow()
+        now_utc = datetime.now(timezone.utc)
         last_check = _last_recurrence_check.get(user_id)
         if last_check and (now_utc - last_check) < timedelta(minutes=1):
             return
@@ -391,7 +391,7 @@ def check_upcoming_reminders():
     """
     try:
         with Session(engine) as session:
-            now = datetime.utcnow()
+            now = datetime.now(timezone.utc)
             # Logic: Notify for any task due in the next 10 minutes (and hasn't been notified yet)
             # This covers tasks due in 1m, 5m, 10m.
             

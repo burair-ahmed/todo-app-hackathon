@@ -21,7 +21,7 @@ export default function TaskForm({ onTaskCreated, onTaskUpdated, taskToEdit, onC
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>(taskToEdit?.tags.map(t => t.id) || []);
   const [allTags, setAllTags] = useState<Tag[]>([]);
   const [newTagName, setNewTagName] = useState('');
-  const [dueDate, setDueDate] = useState(taskToEdit?.due_date ? new Date(taskToEdit.due_date).toISOString().slice(0, 16) : '');
+  const [dueDate, setDueDate] = useState(taskToEdit?.due_date ? new Date(taskToEdit.due_date).toLocaleString('sv-SE').replace(' ', 'T').slice(0, 16) : '');
   const [recurrence, setRecurrence] = useState<string>(taskToEdit?.recurrence || 'none');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -75,7 +75,7 @@ export default function TaskForm({ onTaskCreated, onTaskUpdated, taskToEdit, onC
           description: description || undefined,
           priority,
           label,
-          due_date: dueDate || undefined,
+          due_date: dueDate ? new Date(dueDate).toISOString() : undefined,
           recurrence: recurrence as any,
           tag_ids: selectedTagIds
         });
@@ -86,7 +86,7 @@ export default function TaskForm({ onTaskCreated, onTaskUpdated, taskToEdit, onC
           description, 
           priority, 
           label,
-          due_date: dueDate || undefined,
+          due_date: dueDate ? new Date(dueDate).toISOString() : undefined,
           recurrence: recurrence as any,
           tag_ids: selectedTagIds 
         });

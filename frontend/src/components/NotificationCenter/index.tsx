@@ -7,7 +7,7 @@ import apiClient from '../../services/api-client';
 
 interface Notification {
   id: string;
-  type: 'task_due' | 'task_overdue' | 'recurring_spawned' | 'task_due_soon' | 'general';
+  type: 'TASK_DUE' | 'TASK_OVERDUE' | 'RECURRING_SPAWNED' | 'TASK_DUE_SOON' | 'GENERAL';
   message: string;
   is_read: boolean;
   created_at: string;
@@ -60,7 +60,7 @@ export default function NotificationCenter() {
   useEffect(() => {
     if (notifications.length > 0) {
       const latest = notifications[0];
-      if (!latest.is_read && (latest.type === 'task_due_soon' || latest.type === 'task_overdue')) {
+      if (!latest.is_read && (latest.type === 'TASK_DUE_SOON' || latest.type === 'TASK_OVERDUE')) {
         // Trigger browser notification
         if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
           new window.Notification("Todo Objective Recall", {
@@ -105,10 +105,10 @@ export default function NotificationCenter() {
 
   const getIcon = (type: Notification['type']) => {
       switch (type) {
-          case 'task_due': return <Calendar className="w-4 h-4 text-blue-500" />;
-          case 'task_due_soon': return <Clock className="w-4 h-4 text-amber-500" />;
-          case 'task_overdue': return <AlertCircle className="w-4 h-4 text-red-500" />;
-          case 'recurring_spawned': return <RefreshCw className="w-4 h-4 text-green-500" />;
+          case 'TASK_DUE': return <Calendar className="w-4 h-4 text-blue-500" />;
+          case 'TASK_DUE_SOON': return <Clock className="w-4 h-4 text-amber-500" />;
+          case 'TASK_OVERDUE': return <AlertCircle className="w-4 h-4 text-red-500" />;
+          case 'RECURRING_SPAWNED': return <RefreshCw className="w-4 h-4 text-green-500" />;
           default: return <Info className="w-4 h-4 text-gray-500" />;
       }
   };
