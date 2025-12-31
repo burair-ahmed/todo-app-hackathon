@@ -11,9 +11,10 @@ interface TaskFormProps {
   onTaskUpdated?: (task: Task) => void;
   taskToEdit?: Task;
   onCancelEdit?: () => void;
+  initialDueDate?: Date;
 }
 
-export default function TaskForm({ onTaskCreated, onTaskUpdated, taskToEdit, onCancelEdit }: TaskFormProps) {
+export default function TaskForm({ onTaskCreated, onTaskUpdated, taskToEdit, onCancelEdit, initialDueDate }: TaskFormProps) {
   const [title, setTitle] = useState(taskToEdit?.title || '');
   const [description, setDescription] = useState(taskToEdit?.description || '');
   const [priority, setPriority] = useState<Priority>(taskToEdit?.priority || 'medium');
@@ -21,7 +22,15 @@ export default function TaskForm({ onTaskCreated, onTaskUpdated, taskToEdit, onC
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>(taskToEdit?.tags.map(t => t.id) || []);
   const [allTags, setAllTags] = useState<Tag[]>([]);
   const [newTagName, setNewTagName] = useState('');
-  const [dueDate, setDueDate] = useState(taskToEdit?.due_date ? new Date(taskToEdit.due_date).toLocaleString('sv-SE').replace(' ', 'T').slice(0, 16) : '');
+  const [dueDate, setDueDate] = useState(() => {
+    if (taskToEdit?.due_date) {
+      return new Date(taskToEdit.due_date).toLocaleString('sv-SE').replace(' ', 'T').slice(0, 16);
+    }
+    if (initialDueDate) {
+      return initialDueDate.toLocaleString('sv-SE').replace(' ', 'T').slice(0, 16);
+    }
+    return '';
+  });
   const [recurrence, setRecurrence] = useState<string>(taskToEdit?.recurrence || 'none');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);

@@ -9,6 +9,7 @@ import TaskForm from '../../components/TaskForm';
 import TaskList from '../../components/TaskList';
 import FilterDropdown from '../../components/FilterDropdown';
 import NotificationCenter from '../../components/NotificationCenter';
+import CalendarView from '../../components/CalendarView';
 import { Task, Tag } from '../../types';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
@@ -40,6 +41,9 @@ export default function DashboardPage() {
   const [refreshTrigger, setRefreshTrigger] = useState(0);
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [isSidebarExpanded, setIsSidebarExpanded] = useState(false);
+  const [activeView, setActiveView] = useState<'dashboard' | 'schedule'>('dashboard');
+  const [calendarSelectedDate, setCalendarSelectedDate] = useState<Date | undefined>(undefined);
+  const [tasks, setTasks] = useState<Task[]>([]);
   
   // Phase II: Filter States
   const [searchQuery, setSearchQuery] = useState('');
@@ -72,6 +76,19 @@ export default function DashboardPage() {
     }
   };
 
+  const fetchTasks = async () => {
+    try {
+      const data = await apiClient.getTasks();
+      setTasks(data);
+    } catch (err) {
+      console.error('Failed to fetch tasks', err);
+    }
+  };
+
+  useEffect(() => {
+    fetchTasks();
+  }, [refreshTrigger]);
+
   const handleLogout = () => {
     logout();
     router.push('/login');
@@ -83,6 +100,22 @@ export default function DashboardPage() {
   };
 
   const handleTaskDone = () => setRefreshTrigger(prev => prev + 1);
+
+  const handleUpdateTask = async (task: Task) => {
+    try {
+      await apiClient.updateTask(task.id as string, {
+        completed: task.completed
+      });
+      setRefreshTrigger(prev => prev + 1);
+    } catch (err) {
+      console.error('Failed to update task', err);
+    }
+  };
+
+  const handleCalendarAddTask = (date: Date) => {
+    setCalendarSelectedDate(date);
+    setIsAddingTask(true);
+  };
 
   const filters = useMemo(() => ({
     search: debouncedSearch || undefined,
@@ -129,13 +162,25 @@ export default function DashboardPage() {
           </div>
           
           <nav className="flex-1 flex flex-col space-y-4 w-full">
-            <button className={`flex items-center space-x-4 p-4 rounded-2xl bg-horizon-50 text-horizon-300 transition-all shadow-sm w-full
-                              ${!isSidebarExpanded && 'justify-center'}`}>
+            <button 
+              onClick={() => setActiveView('dashboard')}
+              className={`flex items-center space-x-4 p-4 rounded-2xl transition-all shadow-sm w-full
+                        ${activeView === 'dashboard' 
+                          ? 'bg-horizon-50 text-horizon-300 shadow-sm' 
+                          : 'text-gray-400 hover:bg-gray-50 hover:text-gray-600'}
+                        ${!isSidebarExpanded && 'justify-center'}`}
+            >
               <LayoutDashboard className="w-6 h-6 min-w-[24px]" />
               {isSidebarExpanded && <span className="font-black text-sm uppercase tracking-widest">Dashboard</span>}
             </button>
-            <button className={`flex items-center space-x-4 p-4 rounded-2xl text-gray-400 hover:bg-gray-50 hover:text-gray-600 transition-all w-full
-                              ${!isSidebarExpanded && 'justify-center'}`}>
+            <button 
+              onClick={() => setActiveView('schedule')}
+              className={`flex items-center space-x-4 p-4 rounded-2xl transition-all w-full
+                        ${activeView === 'schedule' 
+                          ? 'bg-horizon-50 text-horizon-300 shadow-sm' 
+                          : 'text-gray-400 hover:bg-gray-50 hover:text-gray-600'}
+                        ${!isSidebarExpanded && 'justify-center'}`}
+            >
               <Calendar className="w-6 h-6 min-w-[24px]" />
               {isSidebarExpanded && <span className="font-black text-sm uppercase tracking-widest">Schedule</span>}
             </button>
@@ -203,157 +248,171 @@ export default function DashboardPage() {
           </header>
 
           {/* Bento Grid Layout */}
-          <motion.div 
-            variants={container}
-            initial="hidden"
-            animate="show"
-            className="grid grid-cols-1 md:grid-cols-12 gap-6"
-          >
-            {/* Main Task List - Large Column */}
-            <motion.div variants={item} className="md:col-span-8 flex flex-col space-y-6">
-              <div className="glass-surface p-8 rounded-[32px] flex-1">
-                <div className="flex flex-col space-y-6 mb-8">
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center space-x-3">
-                      <div className="w-2 h-8 bg-horizon-300 rounded-full" />
-                      <h2 className="text-2xl font-black">Active Objectives</h2>
+          {activeView === 'dashboard' ? (
+            <motion.div 
+              variants={container}
+              initial="hidden"
+              animate="show"
+              className="grid grid-cols-1 md:grid-cols-12 gap-6"
+            >
+              {/* Main Task List - Large Column */}
+              <motion.div variants={item} className="md:col-span-8 flex flex-col space-y-6">
+                <div className="glass-surface p-8 rounded-[32px] flex-1">
+                  <div className="flex flex-col space-y-6 mb-8">
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center space-x-3">
+                        <div className="w-2 h-8 bg-horizon-300 rounded-full" />
+                        <h2 className="text-2xl font-black">Active Objectives</h2>
+                      </div>
+                      <span className="text-xs font-black uppercase tracking-widest text-gray-400 bg-gray-50 px-3 py-1.5 rounded-full">
+                        {new Date().toLocaleDateString(undefined, { month: 'long', day: 'numeric' })}
+                      </span>
                     </div>
-                    <span className="text-xs font-black uppercase tracking-widest text-gray-400 bg-gray-50 px-3 py-1.5 rounded-full">
-                      {new Date().toLocaleDateString(undefined, { month: 'long', day: 'numeric' })}
-                    </span>
-                  </div>
 
-                  {/* Modernized Filters & Sorting Bar */}
-                  <div className="flex flex-wrap items-center gap-3 pt-6 border-t border-gray-100">
-                    <FilterDropdown
-                      label="All Priorities"
-                      icon={<Flag className="w-3.5 h-3.5" />}
-                      value={filterPriority}
-                      onChange={setFilterPriority}
-                      options={[
-                        { label: 'All Priorities', value: '' },
-                        { label: 'High', value: 'high', icon: <div className="w-2 h-2 rounded-full bg-red-500" /> },
-                        { label: 'Medium', value: 'medium', icon: <div className="w-2 h-2 rounded-full bg-orange-500" /> },
-                        { label: 'Low', value: 'low', icon: <div className="w-2 h-2 rounded-full bg-blue-500" /> }
-                      ]}
-                    />
-
-                    <FilterDropdown
-                      label="All Tags"
-                      icon={<Layers className="w-3.5 h-3.5" />}
-                      value={filterTagId}
-                      onChange={setFilterTagId}
-                      options={[
-                        { label: 'All Tags', value: '' },
-                        ...allTags.map(tag => ({ label: tag.name, value: tag.id }))
-                      ]}
-                    />
-
-                    <FilterDropdown
-                      label="All Statuses"
-                      icon={<CheckCircle2 className="w-3.5 h-3.5" />}
-                      value={filterCompleted === undefined ? '' : filterCompleted.toString()}
-                      onChange={(val) => setFilterCompleted(val === '' ? undefined : val === 'true')}
-                      options={[
-                        { label: 'All Statuses', value: '' },
-                        { label: 'Active Only', value: 'false' },
-                        { label: 'Completed Only', value: 'true' }
-                      ]}
-                    />
-
-                    <FilterDropdown
-                      label="Context"
-                      icon={<Home className="w-3.5 h-3.5" />}
-                      value={filterLabel}
-                      onChange={setFilterLabel}
-                      options={[
-                        { label: 'All Contexts', value: '' },
-                        { label: 'Home', value: 'home', icon: <Home className="w-3 h-3 text-purple-500" /> },
-                        { label: 'Work', value: 'work', icon: <Briefcase className="w-3 h-3 text-blue-500" /> }
-                      ]}
-                    />
-
-                    <div className="flex items-center ml-auto space-x-2">
-                       <FilterDropdown
-                        label="Sort By"
-                        icon={<ArrowUpDown className="w-3.5 h-3.5" />}
-                        value={sortBy}
-                        onChange={setSortBy}
+                    {/* Modernized Filters & Sorting Bar */}
+                    <div className="flex flex-wrap items-center gap-3 pt-6 border-t border-gray-100">
+                      <FilterDropdown
+                        label="All Priorities"
+                        icon={<Flag className="w-3.5 h-3.5" />}
+                        value={filterPriority}
+                        onChange={setFilterPriority}
                         options={[
-                          { label: 'Recently Created', value: 'created_at' },
-                          { label: 'Alphabetical', value: 'title' },
-                          { label: 'Priority Level', value: 'priority' }
+                          { label: 'All Priorities', value: '' },
+                          { label: 'High', value: 'high', icon: <div className="w-2 h-2 rounded-full bg-red-500" /> },
+                          { label: 'Medium', value: 'medium', icon: <div className="w-2 h-2 rounded-full bg-orange-500" /> },
+                          { label: 'Low', value: 'low', icon: <div className="w-2 h-2 rounded-full bg-blue-500" /> }
                         ]}
                       />
-                      <button 
-                        onClick={() => setOrder(order === 'asc' ? 'desc' : 'asc')}
-                        className={`p-2.5 rounded-2xl transition-all shadow-sm border-2
-                          ${order === 'desc' 
-                            ? 'bg-horizon-900 text-white border-horizon-900 shadow-soft-float' 
-                            : 'bg-white text-gray-400 border-gray-100 hover:border-gray-200'}`}
-                      >
-                        {order === 'desc' ? <SortDesc className="w-4 h-4" /> : <SortAsc className="w-4 h-4" />}
-                      </button>
+
+                      <FilterDropdown
+                        label="All Tags"
+                        icon={<Layers className="w-3.5 h-3.5" />}
+                        value={filterTagId}
+                        onChange={setFilterTagId}
+                        options={[
+                          { label: 'All Tags', value: '' },
+                          ...allTags.map(tag => ({ label: tag.name, value: tag.id }))
+                        ]}
+                      />
+
+                      <FilterDropdown
+                        label="All Statuses"
+                        icon={<CheckCircle2 className="w-3.5 h-3.5" />}
+                        value={filterCompleted === undefined ? '' : filterCompleted.toString()}
+                        onChange={(val) => setFilterCompleted(val === '' ? undefined : val === 'true')}
+                        options={[
+                          { label: 'All Statuses', value: '' },
+                          { label: 'Active Only', value: 'false' },
+                          { label: 'Completed Only', value: 'true' }
+                        ]}
+                      />
+
+                      <FilterDropdown
+                        label="Context"
+                        icon={<Home className="w-3.5 h-3.5" />}
+                        value={filterLabel}
+                        onChange={setFilterLabel}
+                        options={[
+                          { label: 'All Contexts', value: '' },
+                          { label: 'Home', value: 'home', icon: <Home className="w-3 h-3 text-purple-500" /> },
+                          { label: 'Work', value: 'work', icon: <Briefcase className="w-3 h-3 text-blue-500" /> }
+                        ]}
+                      />
+
+                      <div className="flex items-center ml-auto space-x-2">
+                        <FilterDropdown
+                          label="Sort By"
+                          icon={<ArrowUpDown className="w-3.5 h-3.5" />}
+                          value={sortBy}
+                          onChange={setSortBy}
+                          options={[
+                            { label: 'Recently Created', value: 'created_at' },
+                            { label: 'Alphabetical', value: 'title' },
+                            { label: 'Priority Level', value: 'priority' }
+                          ]}
+                        />
+                        <button 
+                          onClick={() => setOrder(order === 'asc' ? 'desc' : 'asc')}
+                          className={`p-2.5 rounded-2xl transition-all shadow-sm border-2
+                            ${order === 'desc' 
+                              ? 'bg-horizon-900 text-white border-horizon-900 shadow-soft-float' 
+                              : 'bg-white text-gray-400 border-gray-100 hover:border-gray-200'}`}
+                        >
+                          {order === 'desc' ? <SortDesc className="w-4 h-4" /> : <SortAsc className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <TaskList
+                    key={`${refreshTrigger}-${JSON.stringify(filters)}`}
+                    filters={filters}
+                    onTaskUpdate={handleTaskDone}
+                    onTaskDelete={handleTaskDone}
+                  />
+                </div>
+              </motion.div>
+
+              {/* Side Column - Sidebar widgets */}
+              <motion.div variants={item} className="md:col-span-4 space-y-6">
+                {/* Quick Profile Card */}
+                <div className="glass-surface p-6 rounded-[32px] bg-white/40 border-none ring-1 ring-white/50">
+                  <div className="flex items-center space-x-4">
+                    <div className="w-14 h-14 bg-horizon-100 rounded-2xl flex items-center justify-center text-horizon-300 shadow-inner-glass">
+                      <UserIcon className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h3 className="font-black text-gray-900 leading-tight">{user?.name || 'User Profile'}</h3>
+                      <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">{user?.email}</p>
                     </div>
                   </div>
                 </div>
-                
-                <TaskList
-                  key={`${refreshTrigger}-${JSON.stringify(filters)}`}
-                  filters={filters}
-                  onTaskUpdate={handleTaskDone}
-                  onTaskDelete={handleTaskDone}
-                />
-              </div>
+
+                {/* Completion Stats */}
+                <div className="glass-surface p-8 rounded-[32px] bg-horizon-900 text-white relative overflow-hidden group">
+                  <div className="absolute top-0 right-0 p-4 opacity-20 group-hover:scale-110 transition-transform">
+                    <TrendingUp className="w-20 h-20" />
+                  </div>
+                  <div className="relative z-10 space-y-6">
+                    <div className="space-y-1">
+                      <p className="text-xs font-black uppercase tracking-[0.2em] text-horizon-200">Productivity Velocity</p>
+                      <h3 className="text-4xl font-black">84%</h3>
+                    </div>
+                    <div className="w-full bg-white/10 h-2 rounded-full overflow-hidden">
+                      <div className="bg-horizon-200 w-[84%] h-full rounded-full" />
+                    </div>
+                    <p className="text-sm font-bold text-white/60">You're completing tasks 12% faster than last week. Keep it up!</p>
+                  </div>
+                </div>
+
+                {/* Quick Info Box */}
+                <div className="glass-surface p-8 rounded-[32px] bg-accent/10 border-none ring-1 ring-accent/20">
+                  <div className="flex items-center space-x-3 mb-4">
+                    <Clock className="w-5 h-5 text-accent" />
+                    <h3 className="font-black text-gray-900">Current Focus</h3>
+                  </div>
+                  <p className="text-sm font-bold text-gray-600 leading-relaxed mb-6">
+                    "Implement Phase II: Search, Filtering, and Sorting."
+                  </p>
+                  <button className="w-full py-4 bg-accent text-white rounded-2xl font-black text-sm flex items-center justify-center group shadow-soft-float">
+                    View Detail <ChevronRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  </button>
+                </div>
+              </motion.div>
             </motion.div>
-
-            {/* Side Column - Sidebar widgets */}
-            <motion.div variants={item} className="md:col-span-4 space-y-6">
-              {/* Quick Profile Card */}
-              <div className="glass-surface p-6 rounded-[32px] bg-white/40 border-none ring-1 ring-white/50">
-                <div className="flex items-center space-x-4">
-                  <div className="w-14 h-14 bg-horizon-100 rounded-2xl flex items-center justify-center text-horizon-300 shadow-inner-glass">
-                    <UserIcon className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <h3 className="font-black text-gray-900 leading-tight">{user?.name || 'User Profile'}</h3>
-                    <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">{user?.email}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Completion Stats */}
-              <div className="glass-surface p-8 rounded-[32px] bg-horizon-900 text-white relative overflow-hidden group">
-                <div className="absolute top-0 right-0 p-4 opacity-20 group-hover:scale-110 transition-transform">
-                  <TrendingUp className="w-20 h-20" />
-                </div>
-                <div className="relative z-10 space-y-6">
-                  <div className="space-y-1">
-                    <p className="text-xs font-black uppercase tracking-[0.2em] text-horizon-200">Productivity Velocity</p>
-                    <h3 className="text-4xl font-black">84%</h3>
-                  </div>
-                  <div className="w-full bg-white/10 h-2 rounded-full overflow-hidden">
-                    <div className="bg-horizon-200 w-[84%] h-full rounded-full" />
-                  </div>
-                  <p className="text-sm font-bold text-white/60">You're completing tasks 12% faster than last week. Keep it up!</p>
-                </div>
-              </div>
-
-              {/* Quick Info Box */}
-              <div className="glass-surface p-8 rounded-[32px] bg-accent/10 border-none ring-1 ring-accent/20">
-                <div className="flex items-center space-x-3 mb-4">
-                  <Clock className="w-5 h-5 text-accent" />
-                  <h3 className="font-black text-gray-900">Current Focus</h3>
-                </div>
-                <p className="text-sm font-bold text-gray-600 leading-relaxed mb-6">
-                  "Implement Phase II: Search, Filtering, and Sorting."
-                </p>
-                <button className="w-full py-4 bg-accent text-white rounded-2xl font-black text-sm flex items-center justify-center group shadow-soft-float">
-                  View Detail <ChevronRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                </button>
-              </div>
+          ) : (
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="glass-surface p-10 rounded-[40px] h-[calc(100vh-280px)] overflow-y-auto scrollbar-hide"
+            >
+              <CalendarView 
+                tasks={tasks} 
+                onAddTask={handleCalendarAddTask} 
+                onUpdateTask={handleUpdateTask}
+              />
             </motion.div>
-          </motion.div>
+          )}
         </main>
 
         {/* Dynamic Task Sheet (Overlay/Modal) */}
@@ -388,7 +447,11 @@ export default function DashboardPage() {
                 </div>
                 
                 <div className="flex-1 overflow-y-auto pr-2 scrollbar-hide">
-                  <TaskForm onTaskCreated={handleTaskCreated} onCancelEdit={() => setIsAddingTask(false)} />
+                  <TaskForm 
+                    onTaskCreated={handleTaskCreated} 
+                    onCancelEdit={() => setIsAddingTask(false)} 
+                    initialDueDate={calendarSelectedDate}
+                  />
                 </div>
               </motion.div>
             </>
