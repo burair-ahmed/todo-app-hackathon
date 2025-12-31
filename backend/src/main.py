@@ -56,6 +56,24 @@ async def log_requests(request, call_next):
     logger.info(f"Response status: {response.status_code}")
     return response
 
+from .services.task_service import check_upcoming_reminders
+import asyncio
+
+async def reminder_loop():
+    """Background loop to check for upcoming task reminders every minute."""
+    while True:
+        try:
+            # Run sync DB check in thread to avoid blocking main loop
+            await asyncio.to_thread(check_upcoming_reminders)
+        except Exception as e:
+            logger.error(f"Error in reminder loop: {e}")
+        await asyncio.sleep(60)
+
+@app.on_event("startup")
+async def start_background_tasks():
+    """Start background tasks on app startup."""
+    asyncio.create_task(reminder_loop())
+
 # Include API routers
 app.include_router(auth_router)
 app.include_router(tasks_router)

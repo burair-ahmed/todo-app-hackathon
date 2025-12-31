@@ -8,6 +8,7 @@ class NotificationType(str, Enum):
     TASK_DUE = "task_due"
     TASK_OVERDUE = "task_overdue"
     RECURRING_SPAWNED = "recurring_spawned"
+    TASK_DUE_SOON = "task_due_soon"
     GENERAL = "general"
 
 class NotificationBase(SQLModel):

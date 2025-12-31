@@ -2,12 +2,12 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Bell, Check, X, Info, AlertCircle, RefreshCw, Calendar } from 'lucide-react';
+import { Bell, Check, X, Info, AlertCircle, RefreshCw, Calendar, Clock } from 'lucide-react';
 import apiClient from '../../services/api-client';
 
 interface Notification {
   id: string;
-  type: 'task_due' | 'task_overdue' | 'recurring_spawned' | 'general';
+  type: 'task_due' | 'task_overdue' | 'recurring_spawned' | 'task_due_soon' | 'general';
   message: string;
   is_read: boolean;
   created_at: string;
@@ -36,10 +36,41 @@ export default function NotificationCenter() {
 
   useEffect(() => {
     fetchNotifications();
+    
+    // Request notification permission on mount
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      if (Notification.permission === 'default') {
+        Notification.requestPermission();
+      }
+    }
+
     // Poll every minute
-    const interval = setInterval(fetchNotifications, 60000);
+    const interval = setInterval(async () => {
+      const oldUnreadCount = unreadCount;
+      await fetchNotifications();
+      
+      // If we have new unread notifications, trigger a browser alert
+      // We check if the unread count increased specifically because of a 'task_due_soon'
+      // But for simplicity, we alert on any NEW unread notification if it's task-related.
+    }, 60000);
     return () => clearInterval(interval);
-  }, []);
+  }, [unreadCount]);
+
+  // Special effect to trigger alerts when unreadCount increases
+  useEffect(() => {
+    if (notifications.length > 0) {
+      const latest = notifications[0];
+      if (!latest.is_read && (latest.type === 'task_due_soon' || latest.type === 'task_overdue')) {
+        // Trigger browser notification
+        if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+          new window.Notification("Todo Objective Recall", {
+            body: latest.message,
+            icon: '/favicon.ico' // Or a custom icon
+          });
+        }
+      }
+    }
+  }, [notifications]);
 
   // Close on click outside
   useEffect(() => {
@@ -75,6 +106,7 @@ export default function NotificationCenter() {
   const getIcon = (type: Notification['type']) => {
       switch (type) {
           case 'task_due': return <Calendar className="w-4 h-4 text-blue-500" />;
+          case 'task_due_soon': return <Clock className="w-4 h-4 text-amber-500" />;
           case 'task_overdue': return <AlertCircle className="w-4 h-4 text-red-500" />;
           case 'recurring_spawned': return <RefreshCw className="w-4 h-4 text-green-500" />;
           default: return <Info className="w-4 h-4 text-gray-500" />;

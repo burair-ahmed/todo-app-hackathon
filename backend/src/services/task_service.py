@@ -1,10 +1,11 @@
 from sqlmodel import Session, select, or_, desc
-from typing import List, Optional
+from sqlalchemy.orm import selectinload
+from typing import List, Optional, Dict
 from uuid import UUID
 from datetime import datetime, timedelta
-from ..models.task import Task, TaskCreate, TaskUpdate, TaskPatch, Tag, TaskTagLink
-from ..models.user import User
-from ..models.notification import Notification, NotificationType
+from ..models.task import Task, TaskCreate, TaskUpdate, TaskPatch, Tag, TaskTagLink, RecurrenceEnum
+from ..models.notification import Notification, NotificationType # Fixed import
+from sqlalchemy import func
 
 # In-memory cache to debounce recurrence checks (User ID -> Last Check Timestamp)
 _last_recurrence_check = {}
@@ -47,7 +48,7 @@ def get_tasks_by_user(
     # Check for missing recurring tasks (auto-spawn)
     # Note: Recurring task spawning is now handled in background tasks by the API endpoint
     
-    statement = select(Task).where(Task.user_id == user_id)
+    statement = select(Task).where(Task.user_id == user_id).options(selectinload(Task.tags))
     
     if search:
         statement = statement.where(
@@ -81,7 +82,7 @@ def get_tasks_by_user(
 
 def get_task_by_id(session: Session, task_id: UUID, user_id: UUID) -> Optional[Task]:
     """Get a specific task by ID for a specific user."""
-    statement = select(Task).where(Task.id == task_id, Task.user_id == user_id)
+    statement = select(Task).where(Task.id == task_id, Task.user_id == user_id).options(selectinload(Task.tags))
     task = session.exec(statement).first()
     return task
 
@@ -208,6 +209,12 @@ def toggle_task_completion(session: Session, task_id: UUID, user_id: UUID) -> Op
             
             # Note: We LEAVE the current task as completed. We do NOT reschedule it.
             return task
+        
+        # For non-recurring tasks, just save and return
+        session.add(task)
+        session.commit()
+        session.refresh(task)
+        return task
             
     else:
         # Marking a completed task back to uncompleted
@@ -376,3 +383,59 @@ def run_spawn_recurring_tasks_background(user_id: UUID):
             spawn_missing_recurring_tasks(session, user_id)
     except Exception as e:
         print(f"BACKGROUND WORKER ERROR (spawn_recurring): {e}")
+
+def check_upcoming_reminders():
+    """
+    Background task to check for tasks due within the next 10 minutes.
+    If found, and no notification exists, create one.
+    """
+    try:
+        with Session(engine) as session:
+            now = datetime.utcnow()
+            # Logic: Notify for any task due in the next 10 minutes (and hasn't been notified yet)
+            # This covers tasks due in 1m, 5m, 10m.
+            
+            target_limit = now + timedelta(minutes=10)
+            
+            # We also verify due_date > now to avoid notifying for already overdue tasks (assuming overdue has its own logic)
+            # Or maybe we include them? User said "before 10minutes of task time ending".
+            
+            statement = select(Task).where(
+                Task.due_date > now,
+                Task.due_date <= target_limit,
+                Task.completed == False
+            )
+            tasks_due_soon = session.exec(statement).all()
+            
+            if tasks_due_soon:
+                print(f"[Reminders] Found {len(tasks_due_soon)} tasks due soon.")
+
+            for task in tasks_due_soon:
+                # Check if we already notified for this specific "due soon" event
+                from ..models.notification import Notification, NotificationType
+                
+                # We interpret "task_due_soon" as the unique key for this 10-min warning.
+                existing_notif = session.exec(
+                    select(Notification).where(
+                        Notification.task_id == task.id,
+                        Notification.type == NotificationType.TASK_DUE_SOON
+                    )
+                ).first()
+                
+                if not existing_notif:
+                    # Create notification
+                    time_diff = task.due_date - now
+                    minutes_left = int(time_diff.total_seconds() / 60)
+                    
+                    notif = Notification(
+                        user_id=task.user_id,
+                        type=NotificationType.TASK_DUE_SOON,
+                        message=f"Reminder: Task '{task.title}' is due in {minutes_left} minutes!",
+                        task_id=task.id
+                    )
+                    session.add(notif)
+                    session.commit()
+                    print(f"[Reminders] Created notification for task {task.id}")
+
+    except Exception as e:
+        print(f"REMINDER WORKER ERROR: {e}")
