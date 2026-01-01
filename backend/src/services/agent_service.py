@@ -40,13 +40,14 @@ async def process_chat_request(
         user_input = f"""
         User (ID: {user_id}): {user_message}
 
-        Instructions for you:
-        - If the user wants to add a task, respond with a structured JSON indicating the add_task tool call.
-        - If the user wants to list tasks, respond with a structured JSON indicating the list_tasks tool call.
-        - If the user wants to update, complete, or delete a task, you MUST use the task UUID (id) provided in the previous tool results.
-        - Respond with a structured JSON block like this: [JSON: {{"name": "tool_name", "arguments": {{"arg1": "val1"}} }}].
-        - Only use these tools when the user explicitly requests task management operations.
-        - For other questions, respond normally without tool calls.
+        System Role: You are a Task Management Assistant.
+        
+        Instructions:
+        - If the user wants to add, list, update, complete, or delete tasks, use the appropriate tool.
+        - To use a tool, respond with a [JSON: {{"name": "...", "arguments": {{...}} }}] block.
+        - If the user refers to a task by index (e.g., "task 1"), look up its UUID from the previous list result in your memory.
+        - Only use the tools when the user explicitly asks for task actions.
+        - For conversational queries, just respond as a helpful assistant.
         """
 
         # Create a chat completion with the conversation history
