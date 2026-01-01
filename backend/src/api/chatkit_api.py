@@ -7,11 +7,13 @@ import json
 router = APIRouter()
 server = GeminiChatKitServer()
 
+@router.get("")
 @router.get("/")
 async def chatkit_root():
     """Health check for ChatKit router."""
     return {"message": "ChatKit API is reachable", "status": "running"}
 
+@router.options("")
 @router.options("/")
 @router.options("/manifest")
 @router.options("/config")
@@ -46,6 +48,8 @@ async def chatkit_config():
         }
     }
 
+@router.post("")
+@router.post("/")
 @router.post("/chat")
 async def chatkit_chat(request: Request, current_user: dict = Depends(get_chatkit_user)):
     """
