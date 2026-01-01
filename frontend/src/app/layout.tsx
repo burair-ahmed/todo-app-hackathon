@@ -1,6 +1,7 @@
 import './globals.css';
 import { ReactNode } from 'react';
 import { ClientProviders } from '../components/ClientProviders';
+import FloatingChatbot from '../components/FloatingChatbot/FloatingChatbot';
 
 export const metadata = {
   title: 'Horizon Todo',
@@ -18,6 +19,7 @@ export default function RootLayout({
         <div className="bg-horizon-mesh" />
         <ClientProviders>
           {children}
+          <FloatingChatbot />
         </ClientProviders>
       </body>
     </html>
