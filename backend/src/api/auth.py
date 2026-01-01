@@ -13,6 +13,14 @@ class LoginRequest(BaseModel):
     email: str
     password: str
 
+@router.get("/register")
+def register_get():
+    """Return a hint if user tries to GET the register endpoint."""
+    return {
+        "message": "Registration requires a POST request. If you are seeing this, your request might have been redirected or the method was changed.",
+        "hint": "Check if your frontend is calling the correct HTTPS URL and that no redirects are dropping the POST method."
+    }
+
 @router.post("/register")
 def register(user_create: UserCreate, session: Session = Depends(get_session)):
     """Register a new user."""

@@ -15,8 +15,18 @@ logger = logging.getLogger(__name__)
 # Create FastAPI app
 app = FastAPI(
     title=settings.PROJECT_NAME,
-    openapi_url=f"{settings.API_V1_STR}/openapi.json",
-    redirect_slashes=False
+    openapi_url=f"{settings.API_V1_STR}/openapi.json"
+)
+
+# Set up CORS middleware - added first but wraps everything added later
+# Note: FastAPI applies middleware in reverse order of addition.
+# We want CORS to be the outermost to handle OPTIONS requests before anything else.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Custom logging middleware
@@ -31,20 +41,12 @@ async def log_requests(request, call_next):
         logger.exception(f"Exception in request processing: {e}")
         raise
 
-# Set up CORS middleware - Added LAST so it is the OUTERMOST middleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False, # Set to False when using allow_origins=["*"]
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
 @app.middleware("http")
 async def add_cors_debug_headers(request, call_next):
+    logger.info(f"Processing {request.method} {request.url}")
     response = await call_next(request)
     if "access-control-allow-origin" not in [k.lower() for k in response.headers.keys()]:
-        logger.warning(f"Response missing CORS headers for {request.method} {request.url}")
+        logger.debug(f"Response for {request.method} {request.url} missing CORS headers")
     return response
 
 from fastapi.exception_handlers import request_validation_exception_handler
@@ -54,7 +56,6 @@ from fastapi.responses import JSONResponse
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request, exc):
     logger.error(f"Validation error: {exc}")
-    # Don't try to read body here as it might be already consumed or cause issues in some cases
     return JSONResponse(
         status_code=422,
         content={"detail": exc.errors()},
@@ -67,7 +68,6 @@ async def reminder_loop():
     """Background loop to check for upcoming task reminders every minute."""
     while True:
         try:
-            # Run sync DB check in thread to avoid blocking main loop
             await asyncio.to_thread(check_upcoming_reminders)
         except Exception as e:
             logger.error(f"Error in reminder loop: {e}")
@@ -79,14 +79,16 @@ async def start_background_tasks():
     asyncio.create_task(reminder_loop())
 
 # Include API routers
+# Specific routes first
 app.include_router(auth_router)
 app.include_router(tasks_router)
 app.include_router(tags_router)
 app.include_router(notifications_router)
+
 from .api.chatkit_api import router as chatkit_router
 app.include_router(chatkit_router, prefix="/api/chatkit", tags=["chatkit"])
 
-# Include chat_router after specific api routes to avoid capturing "chatkit" as user_id
+# Generic routes last
 app.include_router(chat_router, prefix="/api/{user_id}", tags=["chat"])
 
 @app.get("/")
