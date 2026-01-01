@@ -7,6 +7,32 @@ import json
 router = APIRouter()
 server = GeminiChatKitServer()
 
+@router.get("/manifest")
+async def chatkit_manifest():
+    """Satisfy SDK domain verification by self-hosting the manifest."""
+    return {
+        "id": "todo-app-manifest",
+        "name": "Todo App Hackathon",
+        "trusted_domains": ["*"],
+        "workflows": {
+            "dummy-workflow": {
+                "name": "Task Assistant",
+                "description": "AI agent for managing tasks"
+            }
+        }
+    }
+
+@router.get("/config")
+async def chatkit_config():
+    """Satisfy SDK configuration request."""
+    return {
+        "id": "todo-app-config",
+        "version": "1.0",
+        "api": {
+            "url": "/api/chatkit/chat"
+        }
+    }
+
 @router.post("/chat")
 async def chatkit_chat(request: Request, current_user: dict = Depends(get_chatkit_user)):
     """
