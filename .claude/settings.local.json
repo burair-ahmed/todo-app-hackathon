@@ -38,7 +38,7 @@
       "Bash(pip install --user python-jose[cryptography]==3.3.0)",
       "Bash(python -c \"import jose; print\\(''jose module:'', jose.__file__\\)\")",
       "Bash(python -c \"import jwcrypto; print\\(''jwcrypto available''\\)\")",
-      "Bash(pip install --user python-jose)",
+      "Bash(pip install)",
       "Bash(pip install --user 'python-jose[cryptography]')",
       "Bash(pip install --user pyjwt)",
       "Bash(python -c \"from jose import JWTError, jwt\")",
@@ -48,7 +48,14 @@
       "Bash(python -c \"from src.main import app; print\\(''Main app imported successfully''\\)\")",
       "Bash(pip install --user sqlmodel)",
       "Bash(python -c \"import sqlmodel; print\\(''SQLModel imported successfully''\\)\")",
-      "Bash(python -m pip install -r requirements.txt)"
+      "Bash(python -m pip install -r requirements.txt)",
+      "Skill(sp.phr)",
+      "Bash(.specify/scripts/bash/create-phr.sh --title \"Update Constitution for Todo AI Chatbot\" --stage constitution --json)",
+      "Bash(git config user.name)",
+      "Bash(ls -d specs/*/)",
+      "Bash(.specify/scripts/powershell/create-new-feature.ps1 -Json \"Specify Phase III: Todo AI Chatbot.\n\nChat API:\n\nEndpoint:\nPOST /api/{user_id}/chat\n\nRequest:\n* conversation_id \\(integer, optional\\)\n* message \\(string, required\\)\n\nResponse:\n* conversation_id \\(integer\\)\n* response \\(string\\)\n* tool_calls \\(array\\)\n\nConversation Rules:\n* If conversation_id is missing, create new conversation\n* Conversation belongs to authenticated user only\n* All messages are persisted\n\nDatabase Models:\n\nConversation:\n* id\n* user_id\n* created_at\n* updated_at\n\nMessage:\n* id\n* user_id\n* conversation_id\n* role \\(\"\"user\"\" | \"\"assistant\"\"\\)\n* content\n* created_at\n\nAgent Rules:\n* Agent receives full conversation history\n* Agent decides when to call MCP tools\n* Agent MUST confirm actions in natural language\n* Agent MUST handle errors gracefully\n\nMCP Tool Contracts:\n\n* add_task\n* list_tasks\n* update_task\n* complete_task\n* delete_task\n\nEach MCP tool:\n* Is stateless\n* Persists changes to database\n* Enforces user ownership\n* Returns structured JSON only\n\nFrontend Requirements:\n* ChatKit UI\n* Auth-protected chatbot page\n* Messages streamed or rendered sequentially\n* No task logic in frontend\n\nBackend Requirements:\n* Agent runner using OpenAI Agents SDK\n* Gemini-backed model configuration\n* MCP server mounted alongside FastAPI\" -Json -Number 1 -ShortName \"ai-chatbot\")",
+      "Bash(git checkout -b 1-ai-chatbot)",
+      "Bash(find)"
     ]
   }
 }

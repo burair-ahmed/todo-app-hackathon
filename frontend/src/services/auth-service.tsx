@@ -3,10 +3,12 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User } from '../types';
 import apiClient from './api-client';
+import { getCurrentUserId } from './auth';
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
+  token: string | null;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, name: string) => Promise<void>;
   logout: () => void;
@@ -17,6 +19,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -24,11 +27,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const checkAuthStatus = async () => {
       try {
         // Check if there's a token in local storage
-        const token = localStorage.getItem('auth_token');
-        if (token) {
-          // In a real implementation, you might want to validate the token
-          // with the backend to get user info
-          // For now, we'll just set a placeholder
+        const storedToken = localStorage.getItem('auth_token');
+        if (storedToken) {
+          setToken(storedToken);
+          const userId = getCurrentUserId(storedToken);
+          if (userId) {
+            setUser({
+              id: userId,
+              email: '',
+              created_at: '',
+              updated_at: ''
+            });
+          }
         }
       } catch (error) {
         console.error('Error checking auth status:', error);
@@ -59,6 +69,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       // Store the token in localStorage
       localStorage.setItem('auth_token', data.access_token);
+      setToken(data.access_token);
 
       // In a real app, you might want to fetch user details after login
       // const userData = await apiClient.getUser();
@@ -90,6 +101,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Store the token in localStorage from registration response
       // Registration already returns the token, so no need to call login() again
       localStorage.setItem('auth_token', data.access_token);
+      setToken(data.access_token);
       
     } catch (error) {
       console.error('Registration error:', error);
@@ -100,6 +112,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const logout = () => {
     // Remove the token from localStorage
     localStorage.removeItem('auth_token');
+    setToken(null);
     setUser(null);
   };
 
@@ -111,6 +124,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const value: AuthContextType = {
     user,
     loading,
+    token,
     login,
     register,
     logout,
