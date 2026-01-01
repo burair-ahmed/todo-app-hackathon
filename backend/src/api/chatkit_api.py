@@ -7,6 +7,11 @@ import json
 router = APIRouter()
 server = GeminiChatKitServer()
 
+@router.get("/")
+async def chatkit_root():
+    """Health check for ChatKit router."""
+    return {"message": "ChatKit API is reachable", "status": "running"}
+
 @router.get("/manifest")
 async def chatkit_manifest():
     """Satisfy SDK domain verification by self-hosting the manifest."""
