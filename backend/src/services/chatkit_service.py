@@ -1,4 +1,5 @@
 import os
+import re
 from datetime import datetime
 from typing import Any, List, Dict
 from chatkit.server import ChatKitServer
@@ -6,7 +7,14 @@ import google.generativeai as genai
 from ..models.message import Message as DBMessage
 from .agent_service import detect_tool_calls, execute_tool_call
 from .simple_store import SimpleMemoryStore
-from chatkit.types import ThreadItemAddedEvent, ThreadItemDoneEvent, AssistantMessageItem, AssistantMessageContent, ErrorEvent
+from chatkit.types import (
+    ThreadItemAddedEvent, 
+    ThreadItemDoneEvent, 
+    AssistantMessageItem, 
+    AssistantMessageContent, 
+    ErrorEvent,
+    HiddenContextItem
+)
 from ..config import settings
 
 # Initialize Gemini
@@ -46,17 +54,25 @@ class GeminiChatKitServer(ChatKitServer):
                      user_message = "\n".join(parts)
 
             for item in items:
-                role = "user" if item.type == "user_message" else "model" if item.type == "assistant_message" else None
+                # If we're at the very end and this matches our current input, don't double-add
+                if item.type == "user_message" and hasattr(item, "id") and input_user_message and getattr(input_user_message, "id", None) == item.id:
+                    continue
+
+                role = "user" if item.type == "user_message" else "model" if item.type in ["assistant_message", "hidden_context_item"] else None
                 if not role:
                     continue
                 
                 parts = []
-                # Check different content structures based on item type
-                if hasattr(item, 'content'):
-                    # AssistantMessageItem and UserMessageItem have content list
-                    for c in item.content:
-                        if hasattr(c, 'text'):
-                            parts.append(c.text)
+                if item.type == "hidden_context_item" and hasattr(item, "content"):
+                    # Wrap hidden content in a VERY clear boundary for AI
+                    parts.append(f"--- INTERNAL CONTEXT (DO NOT SHOW TO USER) ---\n{item.content}\n--- END INTERNAL CONTEXT ---")
+                elif hasattr(item, 'content'):
+                    if isinstance(item.content, list):
+                        for c in item.content:
+                            if hasattr(c, 'text'):
+                                parts.append(c.text)
+                    else:
+                        parts.append(str(item.content))
                 
                 if parts:
                     history_for_ai.append({
@@ -80,43 +96,26 @@ class GeminiChatKitServer(ChatKitServer):
                  }
                  return
 
-            # Prepare user input with instructions (reusing logic from agent_service)
+            # Pass 1: Get Tool Calls
+            # We already have history_for_ai from database.
             user_id = context.get("user_id", "default_user")
             
-            # Refined instructions to be more explicit
-            user_input_with_instructions = f"""
+            # We'll prepend a system instruction if it's the first message or just use the current one.
+            current_user_prompt = f"""
             User (ID: {user_id}): {user_message}
 
-            Instructions:
-            System Role: You are a Task Management Assistant.
-            User ID: {user_id}
-            
-            Available Actions:
-            1. Add a task: Respond with "I'll add that for you. [JSON: {{"name": "add_task", "arguments": {{"user_id": "{user_id}", "title": "TASK_TITLE", "description": ""}} }}]"
-            2. List tasks: Respond with "Here are your tasks: [JSON: {{"name": "list_tasks", "arguments": {{"user_id": "{user_id}"}} }}]"
-            3. Complete task: Respond with "Completing task for you. [JSON: {{"name": "complete_task", "arguments": {{"user_id": "{user_id}", "task_id": TASK_ID}} }}]"
-            4. Delete task: Respond with "Deleting task for you. [JSON: {{"name": "delete_task", "arguments": {{"user_id": "{user_id}", "task_id": TASK_ID}} }}]"
-            5. Update task: Respond with "Updating task for you. [JSON: {{"name": "update_task", "arguments": {{"user_id": "{user_id}", "task_id": TASK_ID, "title": "NEW_TITLE"}} }}]"
-
-            Rules:
-            - If the user wants to manage tasks, MUST include the [JSON: ...] block in your response.
-            - The `detect_tool_calls` function will parse these blocks.
-            - If it's a general question, just respond normally.
+            System Instructions:
+            - You are the Task Management Assistant.
+            - I have provided your previous tool execution results in the chat history between "INTERNAL CONTEXT" markers.
+            - If the user says "Task 1", refer to the 1st task ID in the most recent `list_tasks` result found in that internal context.
+            - You MUST output the EXACT UUID in your [JSON: ...] tool call.
+            - DO NOT tell the user about UUIDs or the hidden memory. Just act on the request.
+            - Target Tool Format: [JSON: {{"name": "tool_name", "arguments": {{"user_id": "{user_id}", ...}} }}]
             """
-            
-            # Call Gemini
-            # We filter history to exclude the VERY last message if it matches user_message to avoid duplication 
-            # if we pass it explicitly, OR we just pass history.
-            # Gemini start_chat history expectation: list of Content objects.
-            # We'll use the history *excluding the current message* if we can identify it.
-            
-            # Simplest approach: Pass empty history and include full context in prompt? No, we want chat context.
-            # Let's filter out the last message if it's the user input key
-            past_history = [h for h in history_for_ai if "\n".join(h["parts"]) != user_message]
 
             try:
-                chat = gemini_model.start_chat(history=past_history)
-                response = chat.send_message(user_input_with_instructions)
+                chat = gemini_model.start_chat(history=history_for_ai)
+                response = chat.send_message(current_user_prompt)
                 ai_text = response.text
             except Exception as e:
                 ai_text = f"Error communicating with Gemini: {str(e)}"
@@ -124,25 +123,63 @@ class GeminiChatKitServer(ChatKitServer):
             # Detect and Execute Tools
             tool_calls = detect_tool_calls(ai_text, user_message, user_id)
             
+            # Pass 2: Finalize text and internal memory
             final_response_text = ai_text
+            internal_memory_text = ai_text # What Gemini will see in next turn
             
             if tool_calls:
-                results_text = "\n\nTool Execution Results:"
+                # Pass 2: Summarize Results
+                tool_results_summary = ""
                 for tool in tool_calls:
                     result = execute_tool_call(tool["name"], tool["arguments"])
-                    results_text += f"\n- {tool['name']}: {result}"
-                final_response_text += results_text
+                    tool_results_summary += f"\nTool '{tool['name']}' Result: {result}"
+                
+                # Ask Gemini to summarize the combined state
+                summary_prompt = f"""
+                The user requested: "{user_message}"
+                You decided to use these tools. Here are the execution results:
+                {tool_results_summary}
+                
+                Now, provide a clean, human-friendly summary to the user.
+                - If you listed tasks, show them in a clean numbered list (e.g., 1. Buy Milk).
+                - DO NOT show task UUIDs unless the user specifically needs them.
+                - DO NOT mention "JSON" or "Tools" in your final response.
+                - Be conversational and helpful.
+                """
+                try:
+                    # We continue the same chat to maintain context
+                    summary_response = chat.send_message(summary_prompt)
+                    final_response_text = summary_response.text
+                    # Internal memory should include both the summary AND the raw tool results
+                    internal_memory_text = f"{final_response_text}\n\n[INTERNAL_SYSTEM_DATA: TOOL_RESULTS]\n{tool_results_summary}"
+                except Exception as e:
+                    final_response_text += f"\n(Summary failed: {str(e)})"
+                    internal_memory_text = final_response_text
 
+            # Clean output for UI: Remove any [JSON: ...] blocks
+            clean_ui_text = re.sub(r"\[JSON:.*?\]", "", final_response_text, flags=re.DOTALL).strip()
+            
+            # 1. Yield the UI message (Clean text, no technical bits)
             item_id = self.store.generate_item_id("message", thread, context)
             assistant_item = AssistantMessageItem(
                 id=item_id,
                 thread_id=thread.id,
                 created_at=datetime.now(),
-                content=[AssistantMessageContent(text=final_response_text, annotations=[])]
+                content=[AssistantMessageContent(text=clean_ui_text, annotations=[])]
             )
-            
             yield ThreadItemAddedEvent(item=assistant_item)
             yield ThreadItemDoneEvent(item=assistant_item)
+
+            # 2. Yield a hidden context item (Internal memory with UUIDs/Tool Results)
+            hidden_id = f"hidden_{item_id}"
+            hidden_item = HiddenContextItem(
+                id=hidden_id,
+                thread_id=thread.id,
+                created_at=datetime.now(),
+                content=internal_memory_text
+            )
+            yield ThreadItemAddedEvent(item=hidden_item)
+            yield ThreadItemDoneEvent(item=hidden_item)
 
         except Exception as e:
             # Log error
