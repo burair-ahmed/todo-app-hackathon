@@ -6,7 +6,7 @@ from .api.tags import router as tags_router
 from .api.notifications import router as notifications_router
 from .api.chat_api import router as chat_router
 from .config import settings
-from fastapi.middleware.proxy_headers import ProxyHeadersMiddleware
+from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 import logging
 
 # Configure logging
