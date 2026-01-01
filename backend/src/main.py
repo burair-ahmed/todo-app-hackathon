@@ -4,6 +4,7 @@ from .api.auth import router as auth_router
 from .api.tasks import router as tasks_router
 from .api.tags import router as tags_router
 from .api.notifications import router as notifications_router
+from .api.chat_api import router as chat_router
 from .config import settings
 import logging
 
@@ -18,43 +19,46 @@ app = FastAPI(
     redirect_slashes=False
 )
 
-# Set up CORS middleware
-origins = [
-    "http://localhost:3000",
-    "http://127.0.0.1:3000",
-    "http://localhost:3001",
-    "http://127.0.0.1:3001",
-    "https://*.hf.space",
-    "https://huggingface.co",
-]
+# Custom logging middleware
+@app.middleware("http")
+async def log_requests(request, call_next):
+    logger.info(f"Incoming request: {request.method} {request.url}")
+    try:
+        response = await call_next(request)
+        logger.info(f"Response status: {response.status_code}")
+        return response
+    except Exception as e:
+        logger.exception(f"Exception in request processing: {e}")
+        raise
 
+# Set up CORS middleware - Added LAST so it is the OUTERMOST middleware
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False, # Set to False when using allow_origins=["*"]
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+@app.middleware("http")
+async def add_cors_debug_headers(request, call_next):
+    response = await call_next(request)
+    if "access-control-allow-origin" not in [k.lower() for k in response.headers.keys()]:
+        logger.warning(f"Response missing CORS headers for {request.method} {request.url}")
+    return response
+
+from fastapi.exception_handlers import request_validation_exception_handler
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 @app.exception_handler(RequestValidationError)
 async def validation_exception_handler(request, exc):
     logger.error(f"Validation error: {exc}")
-    logger.error(f"Request body: {await request.body()}")
+    # Don't try to read body here as it might be already consumed or cause issues in some cases
     return JSONResponse(
         status_code=422,
-        content={"detail": exc.errors(), "body": exc.body},
+        content={"detail": exc.errors()},
     )
-
-# Custom logging middleware
-@app.middleware("http")
-async def log_requests(request, call_next):
-    logger.info(f"Incoming request: {request.method} {request.url}")
-    response = await call_next(request)
-    logger.info(f"Response status: {response.status_code}")
-    return response
 
 from .services.task_service import check_upcoming_reminders
 import asyncio
@@ -79,6 +83,11 @@ app.include_router(auth_router)
 app.include_router(tasks_router)
 app.include_router(tags_router)
 app.include_router(notifications_router)
+from .api.chatkit_api import router as chatkit_router
+app.include_router(chatkit_router, prefix="/api/chatkit", tags=["chatkit"])
+
+# Include chat_router after specific api routes to avoid capturing "chatkit" as user_id
+app.include_router(chat_router, prefix="/api/{user_id}", tags=["chat"])
 
 @app.get("/")
 def read_root():

@@ -11,6 +11,10 @@ class Settings(BaseSettings):
     JWT_ALGORITHM: str = "HS256"
     JWT_EXPIRATION_HOURS: int = 24
 
+    # AI API keys
+    GEMINI_API_KEY: Optional[str] = None
+    OPENAI_API_KEY: Optional[str] = None
+
     # API settings
     API_V1_STR: str = "/api/v1"
     PROJECT_NAME: str = "Todo Full-Stack Application"

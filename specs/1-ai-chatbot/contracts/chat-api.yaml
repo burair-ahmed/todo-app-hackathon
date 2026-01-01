@@ -1,0 +1,129 @@
+openapi: 3.0.0
+info:
+  title: Todo AI Chatbot API
+  description: API for the Todo AI Chatbot feature
+  version: 1.0.0
+servers:
+  - url: https://api.example.com
+    description: Production server
+  - url: https://staging-api.example.com
+    description: Staging server
+
+paths:
+  /api/{user_id}/chat:
+    post:
+      summary: Process a chat message in a conversation
+      description: Handles a user message in a conversation and returns the AI response along with any tool calls
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          description: The ID of the authenticated user
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - message
+              properties:
+                conversation_id:
+                  type: integer
+                  description: Optional conversation ID; if not provided, a new conversation is created
+                message:
+                  type: string
+                  description: The user's message
+                  example: "Add a task to buy groceries"
+      responses:
+        '200':
+          description: Successful response with AI reply and tool calls
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - conversation_id
+                  - response
+                  - tool_calls
+                properties:
+                  conversation_id:
+                    type: integer
+                    description: The ID of the conversation (newly created if not provided)
+                  response:
+                    type: string
+                    description: The AI's response to the user
+                    example: "I've added the task 'buy groceries' to your list."
+                  tool_calls:
+                    type: array
+                    description: Array of tool calls that the agent decided to execute
+                    items:
+                      type: object
+                      properties:
+                        name:
+                          type: string
+                          description: Name of the tool to call
+                          example: "add_task"
+                        arguments:
+                          type: object
+                          description: Arguments for the tool call
+                          example:
+                            title: "buy groceries"
+                            description: "Get milk, bread, and eggs"
+        '401':
+          description: Unauthorized - invalid or missing JWT token
+        '403':
+          description: Forbidden - user trying to access another user's conversation
+        '400':
+          description: Bad request - invalid input parameters
+        '500':
+          description: Internal server error
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    ChatRequest:
+      type: object
+      required:
+        - message
+      properties:
+        conversation_id:
+          type: integer
+          description: Optional conversation ID
+        message:
+          type: string
+          description: The user's message
+    ChatResponse:
+      type: object
+      required:
+        - conversation_id
+        - response
+        - tool_calls
+      properties:
+        conversation_id:
+          type: integer
+          description: The ID of the conversation
+        response:
+          type: string
+          description: The AI's response
+        tool_calls:
+          type: array
+          items:
+            $ref: '#/components/schemas/ToolCall'
+    ToolCall:
+      type: object
+      properties:
+        name:
+          type: string
+          description: Name of the tool to call
+        arguments:
+          type: object
+          description: Arguments for the tool call
+security:
+  - BearerAuth: []
