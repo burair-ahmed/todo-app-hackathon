@@ -7,8 +7,9 @@ class ApiClient {
   private client: AxiosInstance;
 
   constructor() {
+    const baseUrl = API_BASE_URL.replace(/\/+$/, '');
     this.client = axios.create({
-      baseURL: API_BASE_URL,
+      baseURL: baseUrl,
       timeout: 100000,
       headers: {
         'Content-Type': 'application/json',
