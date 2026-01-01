@@ -6,10 +6,13 @@ from ..models.message import Message
 import google.generativeai as genai
 from .mcp_server import get_mcp_tools
 
+from ..config import settings
+
 # Initialize the Gemini client
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+GEMINI_API_KEY = settings.GEMINI_API_KEY
 genai.configure(api_key=GEMINI_API_KEY)
-gemini_model = genai.GenerativeModel('gemini-pro')
+# Using gemini-flash-latest to avoid quota issues and be consistent
+gemini_model = genai.GenerativeModel('gemini-flash-latest')
 
 # Get MCP tools
 mcp_tools = get_mcp_tools()
@@ -38,13 +41,12 @@ async def process_chat_request(
         User (ID: {user_id}): {user_message}
 
         Instructions for you:
-        - If the user wants to add a task, respond with a structured JSON indicating the add_task tool call
-        - If the user wants to list tasks, respond with a structured JSON indicating the list_tasks tool call
-        - If the user wants to update a task, respond with a structured JSON indicating the update_task tool call
-        - If the user wants to complete a task, respond with a structured JSON indicating the complete_task tool call
-        - If the user wants to delete a task, respond with a structured JSON indicating the delete_task tool call
-        - Only use these tools when the user explicitly requests task management operations
-        - For other questions, respond normally without tool calls
+        - If the user wants to add a task, respond with a structured JSON indicating the add_task tool call.
+        - If the user wants to list tasks, respond with a structured JSON indicating the list_tasks tool call.
+        - If the user wants to update, complete, or delete a task, you MUST use the task UUID (id) provided in the previous tool results.
+        - Respond with a structured JSON block like this: [JSON: {{"name": "tool_name", "arguments": {{"arg1": "val1"}} }}].
+        - Only use these tools when the user explicitly requests task management operations.
+        - For other questions, respond normally without tool calls.
         """
 
         # Create a chat completion with the conversation history
@@ -71,17 +73,33 @@ async def process_chat_request(
 def detect_tool_calls(ai_response: str, user_message: str, user_id: str) -> List[Dict[str, Any]]:
     """
     Detect if any tool calls should be made based on the user's request and AI response.
-    This is a simplified approach - in a real implementation, this would be more sophisticated.
+    First tries to parse structured JSON from the AI response, then falls back to keyword matching.
     """
     tool_calls = []
 
-    # Look for task management keywords in the user message
+    # 1. Try parsing structured JSON from AI response [JSON: ...]
+    json_blocks = re.findall(r"\[JSON:\s*(\{.*?\})\]", ai_response, re.DOTALL)
+    for block in json_blocks:
+        try:
+            tool_call = json.loads(block)
+            if "name" in tool_call and "arguments" in tool_call:
+                # Ensure user_id is correct even if AI messed it up
+                tool_call["arguments"]["user_id"] = user_id
+                tool_calls.append(tool_call)
+                # If we found valid JSON, we prioritize it
+        except:
+            pass
+    
+    if tool_calls:
+        return tool_calls
+
+    # 2. Fallback to keyword matching in user message (legacy logic)
     user_message_lower = user_message.lower()
 
     # Add task
     if any(keyword in user_message_lower for keyword in ["add task", "create task", "new task", "add a task"]):
         # Extract task title and description using simple regex
-        title_match = re.search(r"(?:to|that|for)\s+(.+?)(?:\s+to|$)", user_message_lower)
+        title_match = re.search(r"(?:to|that|for|task)\s+(.+?)(?:\s+to|$)", user_message_lower)
         if title_match:
             title = title_match.group(1).strip()
             tool_calls.append({

@@ -1,4 +1,4 @@
-from fastapi import HTTPException, Depends
+from fastapi import HTTPException, Depends, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from typing import Optional
 from ..config import settings
@@ -33,6 +33,61 @@ def verify_token(token: str) -> Optional[dict]:
 def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> dict:
     """Get the current user from the JWT token in the Authorization header."""
     token = credentials.credentials
+    payload = verify_token(token)
+
+    if payload is None:
+        raise HTTPException(
+            status_code=401,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    user_id = payload.get("sub")
+    if user_id is None:
+        raise HTTPException(
+            status_code=401,
+            detail="Could not validate credentials",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    # Convert user_id to UUID if it's a string
+    try:
+        user_id_uuid = uuid.UUID(user_id) if isinstance(user_id, str) else user_id
+    except ValueError:
+        raise HTTPException(
+            status_code=401,
+            detail="Invalid user ID in token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+
+    return {
+        "user_id": user_id_uuid,
+        "email": payload.get("email"),
+        "name": payload.get("name")
+    }
+
+async def get_chatkit_user(request: Request) -> dict:
+    """
+    Get the current user from the JWT token in the Authorization header.
+    Handles both 'Bearer <token>' and raw '<token>' formats.
+    """
+    auth_header = request.headers.get("Authorization")
+    
+    if not auth_header:
+        # Check if it's sent in a different header like X-ChatKit-Token (some SDKs do this)
+        auth_header = request.headers.get("x-chatkit-domain-key")
+
+    if not auth_header:
+        raise HTTPException(
+            status_code=401,
+            detail="Missing Authorization header",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    
+    token = auth_header
+    if auth_header.startswith("Bearer "):
+        token = auth_header[7:]
+    
     payload = verify_token(token)
 
     if payload is None:

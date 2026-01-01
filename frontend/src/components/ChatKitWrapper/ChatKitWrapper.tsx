@@ -2,6 +2,7 @@
 
 import { ChatKit, useChatKit } from '@openai/chatkit-react';
 import { useEffect } from 'react';
+import { useAuth } from '../../services/auth-service';
 
 // Import the web component styles and script
 // In a real implementation, you might need to import '@openai/chatkit' 
@@ -14,13 +15,24 @@ interface ChatKitWrapperProps {
 }
 
 const ChatKitWrapper = ({ userId }: ChatKitWrapperProps) => {
+  const { token } = useAuth();
   const apiKey = process.env.NEXT_PUBLIC_CHATKIT_API_KEY;
   const workflowId = process.env.NEXT_PUBLIC_CHATKIT_WORKFLOW_ID;
 
   const { ref, control } = useChatKit({
     api: {
       url: `${process.env.NEXT_PUBLIC_API_URL}/api/chatkit/chat`,
-      domainKey: apiKey || 'dummy-key', // Use dummy key if missing, backend handles auth or ignores it for now
+      domainKey: token || 'dummy-key', 
+      fetch: (url, options) => {
+        const headers = new Headers(options?.headers);
+        if (token) {
+          headers.set('Authorization', `Bearer ${token}`);
+        }
+        return fetch(url, {
+          ...options,
+          headers,
+        });
+      },
     },
     theme: 'light',
   });
