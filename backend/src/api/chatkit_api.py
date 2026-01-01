@@ -12,6 +12,14 @@ async def chatkit_root():
     """Health check for ChatKit router."""
     return {"message": "ChatKit API is reachable", "status": "running"}
 
+@router.options("/")
+@router.options("/manifest")
+@router.options("/config")
+@router.options("/chat")
+async def chatkit_options():
+    """Handle CORS preflight for ChatKit."""
+    return Response(status_code=200)
+
 @router.get("/manifest")
 async def chatkit_manifest():
     """Satisfy SDK domain verification by self-hosting the manifest."""
