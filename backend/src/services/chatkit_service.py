@@ -101,16 +101,37 @@ class GeminiChatKitServer(ChatKitServer):
             user_id = context.get("user_id", "default_user")
             
             # We'll prepend a system instruction if it's the first message or just use the current one.
+            current_time = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             current_user_prompt = f"""
+            Current Local Time: {current_time}
             User (ID: {user_id}): {user_message}
 
             System Instructions:
             - You are the Task Management Assistant.
             - I have provided your previous tool execution results in the chat history between "INTERNAL CONTEXT" markers.
+            
+            TIME AWARENESS:
+            - Use the "Current Local Time" provided above as the ABSOLUTE basis for all relative terms (e.g., "today", "tomorrow", "next Friday").
+            - If today is Jan 1st, 2026, then "tomorrow" is Jan 2nd, 2026.
+            - ALWAYS output the `due_date` in ISO format (YYYY-MM-DDTHH:MM:SS).
+            
+            TOOL USAGE RULES:
+            - To perform an action, output EXACTLY one block like: [JSON: {{"name": "tool_name", "arguments": {{"user_id": "{user_id}", ...}} }}]
             - If the user says "Task 1", refer to the 1st task ID in the most recent `list_tasks` result found in that internal context.
             - You MUST output the EXACT UUID in your [JSON: ...] tool call.
-            - DO NOT tell the user about UUIDs or the hidden memory. Just act on the request.
-            - Target Tool Format: [JSON: {{"name": "tool_name", "arguments": {{"user_id": "{user_id}", ...}} }}]
+            
+            TASK CREATION & UPDATING:
+            - The `add_task` and `update_task` tools now support these fields:
+              * `priority`: "low", "medium", "high"
+              * `label`: "work", "home"
+              * `due_date`: e.g. "2026-01-02T14:00:00"
+              * `recurrence`: "none", "daily", "weekly", "monthly"
+            - Be interactive! If a user is vague (e.g., "Add a task to buy milk"), you can add it, but also ask if they want to set a priority, a due date, or a label (work/home).
+            - If the user provides details like "Due tomorrow" or "at work", map those to the correct tool arguments.
+            
+            GENERAL RULES:
+            - DO NOT tell the user about UUIDs or the hidden memory.
+            - Provide a friendly text response along with your tool call.
             """
 
             try:
