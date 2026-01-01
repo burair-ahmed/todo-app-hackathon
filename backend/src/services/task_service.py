@@ -291,8 +291,7 @@ def spawn_missing_recurring_tasks(session: Session, user_id: UUID) -> None:
         # Actually, user said: "create a new task tomorrow at same time".
         # So we just ensure there is a task for the *current* or *next* slot.
         # Let's simple fill the gap up to "tomorrow".
-        
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         
         from ..models.task import RecurrenceEnum
         

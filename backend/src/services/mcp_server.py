@@ -21,29 +21,66 @@ def enforce_user_ownership(func):
     return wrapper
 
 @enforce_user_ownership
-def add_task(user_id: str, title: str, description: str = None) -> Dict[str, Any]:
+def add_task(
+    user_id: str, 
+    title: str, 
+    description: str = None,
+    priority: str = "medium",
+    label: str = None,
+    due_date: str = None,
+    recurrence: str = "none"
+) -> Dict[str, Any]:
     """
-    MCP tool to add a task for a user
+    MCP tool to add a task for a user with all available fields.
+    - priority: low, medium, high
+    - label: work, home
+    - recurrence: none, daily, weekly, monthly
+    - due_date: ISO format string
     """
     try:
         from uuid import UUID
+        from datetime import datetime
+        from dateutil import parser
         from ..services.task_service import create_task
+        from ..models.task import PriorityEnum, LabelEnum, RecurrenceEnum
 
         # Validate user_id is a proper UUID
         user_uuid = UUID(user_id) if not isinstance(user_id, UUID) else user_id
+
+        # Parse due_date
+        parsed_due_date = None
+        if due_date:
+            try:
+                from dateutil import parser
+                import datetime as dt
+                parsed_due_date = parser.parse(due_date)
+                
+                # If naive, assume it's user's local time (UTC+5) and convert to UTC
+                if parsed_due_date.tzinfo is None:
+                    tz = dt.timezone(dt.timedelta(hours=5))
+                    parsed_due_date = parsed_due_date.replace(tzinfo=tz).astimezone(dt.timezone.utc)
+            except Exception as de:
+                print(f"ADD_TASK DUE_DATE PARSE ERROR: {de}")
 
         # Create task using the existing task service
         with next(get_session()) as session:
             task_data = TaskCreate(
                 title=title,
                 description=description or "",
-                completed=False
+                completed=False,
+                priority=PriorityEnum(priority.lower()) if priority else PriorityEnum.MEDIUM,
+                label=LabelEnum(label.lower()) if label else None,
+                due_date=parsed_due_date,
+                recurrence=RecurrenceEnum(recurrence.lower()) if recurrence else RecurrenceEnum.NONE
             )
             created_task = create_task(session, task_data, user_id=user_uuid)
 
         return {
             "status": "success",
-            "task_id": str(created_task.id),  # Convert UUID to string for JSON serialization
+            "task": {
+                "id": str(created_task.id),
+                "title": created_task.title
+            },
             "message": f"Task '{title}' added successfully"
         }
     except Exception as e:
@@ -97,14 +134,26 @@ def list_tasks(user_id: str, status: str = None) -> List[Dict[str, Any]]:
         return []
 
 @enforce_user_ownership
-def update_task(user_id: str, task_id: Any, title: str = None, description: str = None) -> Dict[str, Any]:
+def update_task(
+    user_id: str, 
+    task_id: Any, 
+    title: str = None, 
+    description: str = None,
+    priority: str = None,
+    label: str = None,
+    due_date: str = None,
+    recurrence: str = None
+) -> Dict[str, Any]:
     """
-    MCP tool to update a task for a user
+    MCP tool to update a task for a user.
+    Supports updating title, description, priority, label, due_date, and recurrence.
     """
     try:
         from uuid import UUID
+        from datetime import datetime
+        from dateutil import parser
         from ..services.task_service import get_task_by_id, update_task as service_update_task
-        from ..models.task import TaskUpdate
+        from ..models.task import TaskUpdate, PriorityEnum, LabelEnum, RecurrenceEnum
 
         # Validate user_id is a proper UUID
         user_uuid = UUID(user_id) if not isinstance(user_id, UUID) else user_id
@@ -115,24 +164,41 @@ def update_task(user_id: str, task_id: Any, title: str = None, description: str 
         except (ValueError, TypeError):
              return {
                 "status": "error",
-                "message": f"Invalid task ID format: {task_id}. Please use the full UUID provided by list_tasks."
+                "message": f"Invalid task ID format: {task_id}. Please use the full UUID."
             }
 
         # Get the task using the existing task service
         with next(get_session()) as session:
             task = get_task_by_id(session, task_uuid, user_id=user_uuid)
 
-            # Check if task exists and belongs to user
             if not task:
                 return {
                     "status": "error",
                     "message": f"Task {task_id} not found or doesn't belong to you."
                 }
 
-            # Prepare update data using TaskUpdate model
+            # Prepare update data
+            parsed_due_date = task.due_date
+            if due_date:
+                try:
+                    from dateutil import parser
+                    import datetime as dt
+                    parsed_due_date = parser.parse(due_date)
+                    
+                    # If naive, assume it's user's local time (UTC+5) and convert to UTC
+                    if parsed_due_date.tzinfo is None:
+                        tz = dt.timezone(dt.timedelta(hours=5))
+                        parsed_due_date = parsed_due_date.replace(tzinfo=tz).astimezone(dt.timezone.utc)
+                except Exception as de:
+                    print(f"UPDATE DUE_DATE PARSE ERROR: {de}")
+
             task_update = TaskUpdate(
                 title=title if title is not None else task.title,
-                description=description if description is not None else task.description
+                description=description if description is not None else task.description,
+                priority=PriorityEnum(priority.lower()) if priority else task.priority,
+                label=LabelEnum(label.lower()) if label else task.label,
+                due_date=parsed_due_date,
+                recurrence=RecurrenceEnum(recurrence.lower()) if recurrence else task.recurrence
             )
 
             # Update the task using the existing task service
