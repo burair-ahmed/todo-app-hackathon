@@ -81,19 +81,27 @@ class GeminiChatKitServer(ChatKitServer):
                  return
 
             # Prepare user input with instructions (reusing logic from agent_service)
-            user_id = context.get("user_id", "default_user") if isinstance(context, dict) else "default_user"
-
+            user_id = context.get("user_id", "default_user")
+            
+            # Refined instructions to be more explicit
             user_input_with_instructions = f"""
             User (ID: {user_id}): {user_message}
 
-            Instructions for you:
-            - If the user wants to add a task, respond with a structured JSON indicating the add_task tool call
-            - If the user wants to list tasks, respond with a structured JSON indicating the list_tasks tool call
-            - If the user wants to update a task, respond with a structured JSON indicating the update_task tool call
-            - If the user wants to complete a task, respond with a structured JSON indicating the complete_task tool call
-            - If the user wants to delete a task, respond with a structured JSON indicating the delete_task tool call
-            - Only use these tools when the user explicitly requests task management operations
-            - For other questions, respond normally without tool calls
+            Instructions:
+            System Role: You are a Task Management Assistant.
+            User ID: {user_id}
+            
+            Available Actions:
+            1. Add a task: Respond with "I'll add that for you. [JSON: {{"name": "add_task", "arguments": {{"user_id": "{user_id}", "title": "TASK_TITLE", "description": ""}} }}]"
+            2. List tasks: Respond with "Here are your tasks: [JSON: {{"name": "list_tasks", "arguments": {{"user_id": "{user_id}"}} }}]"
+            3. Complete task: Respond with "Completing task for you. [JSON: {{"name": "complete_task", "arguments": {{"user_id": "{user_id}", "task_id": TASK_ID}} }}]"
+            4. Delete task: Respond with "Deleting task for you. [JSON: {{"name": "delete_task", "arguments": {{"user_id": "{user_id}", "task_id": TASK_ID}} }}]"
+            5. Update task: Respond with "Updating task for you. [JSON: {{"name": "update_task", "arguments": {{"user_id": "{user_id}", "task_id": TASK_ID, "title": "NEW_TITLE"}} }}]"
+
+            Rules:
+            - If the user wants to manage tasks, MUST include the [JSON: ...] block in your response.
+            - The `detect_tool_calls` function will parse these blocks.
+            - If it's a general question, just respond normally.
             """
             
             # Call Gemini

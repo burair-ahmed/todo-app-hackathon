@@ -1,13 +1,14 @@
 from fastapi import APIRouter, Request, Depends, Response
 from fastapi.responses import StreamingResponse, JSONResponse
 from ..services.chatkit_service import GeminiChatKitServer
+from ..middleware.jwt_auth import get_chatkit_user
 import json
 
 router = APIRouter()
 server = GeminiChatKitServer()
 
 @router.post("/chat")
-async def chatkit_chat(request: Request):
+async def chatkit_chat(request: Request, current_user: dict = Depends(get_chatkit_user)):
     """
     Endpoint for ChatKit interaction.
     """
@@ -15,8 +16,8 @@ async def chatkit_chat(request: Request):
     body = await request.body()
     
     # Context can be used to pass user info etc.
-    # For now, simplistic context
-    context = {"user_id": "user_123"}
+    # Pass the real user_id (UUID) from the authenticated user
+    context = {"user_id": str(current_user["user_id"])}
     
     # Process the request
     # server.process returns a StreamingResult or NonStreamingResult
