@@ -37,16 +37,16 @@ const ChatKitWrapper = ({ userId }: ChatKitWrapperProps) => {
     theme: 'light',
   });
 
-  if (!apiKey || apiKey === 'your-openai-api-key-here') {
+  if (!apiKey || apiKey === 'your-openai-api-key-here' || apiKey.length < 5) {
     return (
       <div className="flex flex-col items-center justify-center h-full p-8 text-center">
         <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-4">
           <p className="text-yellow-700">
-            <strong>ChatKit API Key Missing:</strong> Please add your OpenAI ChatKit API key (Project API Key) to the <code>frontend/.env.local</code> file.
+            <strong>ChatKit Configuration Incomplete:</strong> Please ensure <code>NEXT_PUBLIC_CHATKIT_API_KEY</code> is set in your environment variables.
           </p>
         </div>
         <p className="text-gray-600">
-          You can get your API key from the <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener noreferrer" className="text-blue-500 underline">OpenAI Dashboard</a>.
+          When using the custom Gemini backend, you can use a dummy value for the API key in <code>frontend/.env.local</code>.
         </p>
       </div>
     );
