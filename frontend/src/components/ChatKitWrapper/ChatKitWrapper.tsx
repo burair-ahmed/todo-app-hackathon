@@ -21,8 +21,8 @@ const ChatKitWrapper = ({ userId }: ChatKitWrapperProps) => {
 
   const { ref, control } = useChatKit({
     api: {
-      url: `${process.env.NEXT_PUBLIC_API_URL}/api/chatkit/chat`,
-      domainKey: token || 'dummy-key', 
+      url: `${process.env.NEXT_PUBLIC_API_URL}/api/chatkit`,
+      domainKey: apiKey || '00000000-0000-0000-0000-000000000000', 
       fetch: (url, options) => {
         const headers = new Headers(options?.headers);
         if (token) {
