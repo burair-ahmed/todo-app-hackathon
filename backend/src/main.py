@@ -6,6 +6,7 @@ from .api.tags import router as tags_router
 from .api.notifications import router as notifications_router
 from .api.chat_api import router as chat_router
 from .config import settings
+from fastapi.middleware.proxy_headers import ProxyHeadersMiddleware
 import logging
 
 # Configure logging
@@ -17,6 +18,9 @@ app = FastAPI(
     title=settings.PROJECT_NAME,
     openapi_url=f"{settings.API_V1_STR}/openapi.json"
 )
+
+# Add ProxyHeadersMiddleware to handle HTTPS redirects correctly behind HF proxy
+app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
 
 # Set up CORS middleware - added first but wraps everything added later
 # Note: FastAPI applies middleware in reverse order of addition.
@@ -59,6 +63,19 @@ async def validation_exception_handler(request, exc):
     return JSONResponse(
         status_code=422,
         content={"detail": exc.errors()},
+    )
+
+@app.exception_handler(405)
+async def method_not_allowed_handler(request, exc):
+    logger.error(f"405 Method Not Allowed: {request.method} {request.url}")
+    return JSONResponse(
+        status_code=405,
+        content={
+            "detail": "Method Not Allowed",
+            "method": request.method,
+            "url": str(request.url),
+            "hint": "Check if you are using the correct HTTP method and that no redirects are changing it."
+        },
     )
 
 from .services.task_service import check_upcoming_reminders
