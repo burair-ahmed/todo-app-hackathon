@@ -55,12 +55,19 @@ async def chatkit_chat(request: Request, current_user: dict = Depends(get_chatki
     """
     Endpoint for ChatKit interaction.
     """
+    import datetime
+    with open("api_debug.log", "a") as log_file:
+         log_file.write(f"[{datetime.datetime.now()}] chatkit_chat called\n")
+
     # Read the raw body
     body = await request.body()
     
     # Context can be used to pass user info etc.
     # Pass the real user_id (UUID) from the authenticated user
     context = {"user_id": str(current_user["user_id"])}
+    
+    with open("api_debug.log", "a") as log_file:
+         log_file.write(f"  User ID: {context['user_id']}\n")
     
     # Process the request
     # server.process returns a StreamingResult or NonStreamingResult

@@ -30,6 +30,15 @@ async def add_task(
 ) -> Dict[str, Any]:
     """
     Add a task for a user.
+    
+    Args:
+        user_id: The UUID of the user.
+        title: Task title.
+        description: Task description (optional).
+        priority: 'low', 'medium', 'high' (default: 'medium').
+        label: 'work', 'home' (optional).
+        due_date: ISO 8601 string (e.g., '2023-12-31T23:59:00') (optional).
+        recurrence: 'daily', 'weekly', 'monthly' (default: 'none').
     """
     try:
         user_uuid = UUID(user_id)
@@ -107,35 +116,64 @@ async def update_task(
 ) -> Dict[str, Any]:
     """
     Update an existing task.
+    
+    Args:
+        user_id: The UUID of the user.
+        task_id: The UUID of the task to update.
+        title: New title (optional).
+        description: New description (optional).
+        priority: 'low', 'medium', 'high' (optional).
+        label: 'work', 'home' (optional).
+        due_date: ISO 8601 string (e.g., '2023-12-31T23:59:00'). Pass 'null' or 'clear' to remove the due date.
+        recurrence: 'daily', 'weekly', 'monthly', 'none'. Pass 'none' or 'null' to remove recurrence.
     """
     try:
         user_uuid = UUID(user_id)
         task_uuid = UUID(task_id)
         
         with next(get_session()) as session:
-            parsed_due_date = None
-            if due_date:
-                try:
-                    parsed_due_date = dateutil.parser.parse(due_date)
-                    if parsed_due_date.tzinfo is None:
-                         tz = dt.timezone(dt.timedelta(hours=5))
-                         parsed_due_date = parsed_due_date.replace(tzinfo=tz).astimezone(dt.timezone.utc)
-                except:
-                    pass
-
-            # If passing None to update_task service for fields, it usually ignores them or sets them to None
-            # The service expects TaskUpdate model
-            task_update = TaskUpdate(
-                title=title,
-                description=description,
-                priority=PriorityEnum(priority.lower()) if priority else None,
-                label=LabelEnum(label.lower()) if label else None,
-                due_date=parsed_due_date,
-                recurrence=RecurrenceEnum(recurrence.lower()) if recurrence else None
-            )
+            # Build update dict dynamically to avoid overwriting with None
+            update_payload = {}
             
-            # Since update_task service checks for None fields in exclude_unset, we need to be careful
-            # We constructed TaskUpdate with Nones for fields not passed.
+            if title is not None:
+                update_payload["title"] = title
+            if description is not None:
+                update_payload["description"] = description
+            if priority is not None:
+                 update_payload["priority"] = PriorityEnum(priority.lower())
+            if label is not None:
+                 update_payload["label"] = LabelEnum(label.lower())
+            
+            # Handle Due Date
+            if due_date is not None:
+                if due_date.lower() in ["null", "none", "clear", "remove", ""]:
+                    update_payload["due_date"] = None
+                else:
+                    try:
+                        parsed = dateutil.parser.parse(due_date)
+                        if parsed.tzinfo is None:
+                            # Assume user local time (UTC+5 hack per context) or just UTC
+                            tz = dt.timezone(dt.timedelta(hours=5))
+                            parsed = parsed.replace(tzinfo=tz).astimezone(dt.timezone.utc)
+                        update_payload["due_date"] = parsed
+                    except Exception as e:
+                        return {"status": "error", "message": f"Invalid date format: {due_date}"}
+
+            # Handle Recurrence
+            if recurrence is not None:
+                if recurrence.lower() in ["null", "none", "clear", "remove", ""]:
+                    update_payload["recurrence"] = RecurrenceEnum.NONE
+                else:
+                    try:
+                        update_payload["recurrence"] = RecurrenceEnum(recurrence.lower())
+                    except ValueError:
+                         return {"status": "error", "message": f"Invalid recurrence: {recurrence}"}
+
+            if not update_payload:
+                return {"status": "success", "message": "No changes requested"}
+
+            # Construct TaskUpdate with ONLY the set fields
+            task_update = TaskUpdate(**update_payload)
             
             updated = service_update_task(session, task_uuid, task_update, user_id=user_uuid)
             
@@ -144,6 +182,8 @@ async def update_task(
             else:
                 return {"status": "error", "message": "Task not found or owned by user"}
     except Exception as e:
+        import traceback
+        traceback.print_exc()
         return {"status": "error", "message": str(e)}
 
 @mcp.tool()
