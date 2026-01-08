@@ -90,7 +90,7 @@ async def chat_endpoint(
     if agent_response.get("tool_calls"):
         from ..services.agent_service import execute_tool_call
         for tool_call in agent_response["tool_calls"]:
-            result = execute_tool_call(tool_call["name"], tool_call["arguments"])
+            result = await execute_tool_call(tool_call["name"], tool_call["arguments"])
             tool_call_results.append({
                 "name": tool_call["name"],
                 "result": result

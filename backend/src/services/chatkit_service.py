@@ -152,7 +152,7 @@ class GeminiChatKitServer(ChatKitServer):
                 # Pass 2: Summarize Results
                 tool_results_summary = ""
                 for tool in tool_calls:
-                    result = execute_tool_call(tool["name"], tool["arguments"])
+                    result = await execute_tool_call(tool["name"], tool["arguments"])
                     tool_results_summary += f"\nTool '{tool['name']}' Result: {result}"
                 
                 # Ask Gemini to summarize the combined state

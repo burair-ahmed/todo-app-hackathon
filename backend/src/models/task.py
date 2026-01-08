@@ -41,18 +41,18 @@ class TaskBase(SQLModel):
     description: Optional[str] = Field(default=None, max_length=1000)
     completed: bool = Field(default=False)
     completed_at: Optional[datetime] = Field(default=None)
-    priority: PriorityEnum = Field(
+    priority: Optional[PriorityEnum] = Field(
         default=PriorityEnum.MEDIUM,
-        sa_column=Column(SAEnum(PriorityEnum, values_callable=lambda obj: [e.value for e in obj]))
+        sa_column=Column(SAEnum(PriorityEnum, values_callable=lambda obj: [e.value for e in obj]), nullable=True)
     )
     label: Optional[LabelEnum] = Field(
         default=None,
         sa_column=Column(SAEnum(LabelEnum, values_callable=lambda obj: [e.value for e in obj], nullable=True))
     )
     due_date: Optional[datetime] = Field(default=None)
-    recurrence: RecurrenceEnum = Field(
+    recurrence: Optional[RecurrenceEnum] = Field(
         default=RecurrenceEnum.NONE,
-        sa_column=Column(SAEnum(RecurrenceEnum, values_callable=lambda obj: [e.value for e in obj]))
+        sa_column=Column(SAEnum(RecurrenceEnum, values_callable=lambda obj: [e.value for e in obj]), nullable=True)
     )
     recurrence_group_id: Optional[uuid.UUID] = Field(default=None)
 
