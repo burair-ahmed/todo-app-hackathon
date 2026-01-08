@@ -12,7 +12,7 @@ from .message_service import (
     get_messages_by_user_id,
     delete_message
 )
-from .agent_service import process_chat_request, initialize_agent
+from .agent_service import run_agent
 from .mcp_server import (
     add_task,
     list_tasks,
@@ -39,8 +39,7 @@ __all__ = [
     "delete_message",
 
     # Agent Service
-    "process_chat_request",
-    "initialize_agent",
+    "run_agent",
 
     # MCP Server
     "add_task",

@@ -15,7 +15,7 @@ from ..services.message_service import (
     get_messages_by_conversation_id,
     get_messages_by_user_id
 )
-from ..services.agent_service import process_chat_request
+from ..services.agent_service import run_agent
 from pydantic import BaseModel
 
 router = APIRouter()
@@ -27,7 +27,7 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     conversation_id: int
     response: str
-    tool_calls: List[dict] = []
+    tool_calls: List[dict] = [] # Kept for schema compatibility, but will be empty
 
 @router.post("/chat", response_model=ChatResponse)
 async def chat_endpoint(
@@ -76,39 +76,48 @@ async def chat_endpoint(
 
     # Get conversation history for the agent
     conversation_history = get_messages_by_conversation_id(session, conversation_id)
+    
+    # 1. Format history for run_agent
+    history_for_agent = []
+    for msg in conversation_history:
+        # Avoid including the message we just added (if get_messages includes it)
+        # or logic to ensure order. Assuming get_messages returns ordered list.
+        # run_agent expects [{"role": "user/assistant", "content": "..."}]
+        
+        # Mapping: Model Message role "assistant" -> "assistant"
+        role = msg.role
+        if role not in ["user", "assistant"]:
+             continue
+             
+        history_for_agent.append({
+            "role": role,
+            "content": msg.content
+        })
 
-    # Process the request with the agent
-    agent_response = await process_chat_request(
+    # 2. Run Agent (ReAct Loop)
+    # The agent now executes tools internally.
+    agent_result = await run_agent(
         user_id=user_id,
-        conversation_id=conversation_id,
         user_message=chat_request.message,
-        conversation_history=conversation_history
+        history=history_for_agent
     )
-
-    # Execute any tool calls returned by the agent
-    tool_call_results = []
-    if agent_response.get("tool_calls"):
-        from ..services.agent_service import execute_tool_call
-        for tool_call in agent_response["tool_calls"]:
-            result = await execute_tool_call(tool_call["name"], tool_call["arguments"])
-            tool_call_results.append({
-                "name": tool_call["name"],
-                "result": result
-            })
+    
+    response_text = agent_result.get("response", "")
+    # We could also log agent_result.get("tool_trace") if needed for debug
 
     # Create the assistant message
     assistant_message_data = MessageCreate(
-        user_id=user_id,  # The assistant is acting on behalf of the system but associated with the user
+        user_id=user_id,
         conversation_id=conversation_id,
         role="assistant",
-        content=agent_response.get("response", "")
+        content=response_text
     )
     assistant_message = create_message(session, assistant_message_data)
 
     return ChatResponse(
         conversation_id=conversation_id,
-        response=agent_response.get("response", ""),
-        tool_calls=tool_call_results  # Return tool call results
+        response=response_text,
+        tool_calls=[] # New agent handles tool calls internally
     )
 
 # Additional endpoints for conversation management could be added here

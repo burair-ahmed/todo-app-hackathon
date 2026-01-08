@@ -71,6 +71,11 @@ async def get_chatkit_user(request: Request) -> dict:
     Get the current user from the JWT token in the Authorization header.
     Handles both 'Bearer <token>' and raw '<token>' formats.
     """
+    import datetime
+    with open("auth_debug.log", "a") as log_file:
+         log_file.write(f"[{datetime.datetime.now()}] get_chatkit_user called\n")
+         log_file.write(f"  Headers: {request.headers}\n")
+
     auth_header = request.headers.get("Authorization")
     
     if not auth_header:
@@ -78,6 +83,8 @@ async def get_chatkit_user(request: Request) -> dict:
         auth_header = request.headers.get("x-chatkit-domain-key")
 
     if not auth_header:
+        with open("auth_debug.log", "a") as log_file:
+             log_file.write("  [ERROR] Missing Authorization header\n")
         raise HTTPException(
             status_code=401,
             detail="Missing Authorization header",
@@ -88,9 +95,14 @@ async def get_chatkit_user(request: Request) -> dict:
     if auth_header.startswith("Bearer "):
         token = auth_header[7:]
     
+    with open("auth_debug.log", "a") as log_file:
+         log_file.write(f"  Token prefix: {token[:10]}...\n")
+
     payload = verify_token(token)
 
     if payload is None:
+        with open("auth_debug.log", "a") as log_file:
+             log_file.write("  [ERROR] Token verification failed (verify_token returned None)\n")
         raise HTTPException(
             status_code=401,
             detail="Could not validate credentials",
@@ -98,6 +110,9 @@ async def get_chatkit_user(request: Request) -> dict:
         )
 
     user_id = payload.get("sub")
+    with open("auth_debug.log", "a") as log_file:
+         log_file.write(f"  User ID from payload: {user_id}\n")
+
     if user_id is None:
         raise HTTPException(
             status_code=401,
