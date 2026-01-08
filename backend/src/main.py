@@ -91,9 +91,19 @@ async def reminder_loop():
             logger.error(f"Error in reminder loop: {e}")
         await asyncio.sleep(60)
 
+from .database.database import engine
+from sqlmodel import SQLModel
+# Import all models to register them with SQLModel.metadata
+from .models.chatkit_models import ChatKitThread, ChatKitItem 
+# (Other models are imported via API routers but explicit import is safer if they aren't)
+
+def create_db_and_tables():
+    SQLModel.metadata.create_all(engine)
+
 @app.on_event("startup")
 async def start_background_tasks():
     """Start background tasks on app startup."""
+    create_db_and_tables()
     asyncio.create_task(reminder_loop())
 
 # Include API routers

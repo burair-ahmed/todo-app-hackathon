@@ -1,7 +1,7 @@
 'use client';
 
 import { ChatKit, useChatKit } from '@openai/chatkit-react';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '../../services/auth-service';
 
 // Import the web component styles and script
@@ -14,15 +14,19 @@ interface ChatKitWrapperProps {
   userId: string;
 }
 
-const ChatKitWrapper = ({ userId }: ChatKitWrapperProps) => {
-  const { token } = useAuth();
-  const apiKey = process.env.NEXT_PUBLIC_CHATKIT_API_KEY;
-  const workflowId = process.env.NEXT_PUBLIC_CHATKIT_WORKFLOW_ID;
+interface ChatKitInnerProps {
+  userId: string;
+  token: string | null;
+  apiKey: string;
+  initialThreadId?: string;
+}
 
-  const { ref, control } = useChatKit({
+const ChatKitInner = ({ userId, token, apiKey, initialThreadId }: ChatKitInnerProps) => {
+  // Use 'any' cast to access threadId if types don't expose it explicitly yet
+  const chat : any = useChatKit({
     api: {
       url: `${process.env.NEXT_PUBLIC_API_URL}/api/chatkit`,
-      domainKey: apiKey || '00000000-0000-0000-0000-000000000000', 
+      domainKey: apiKey, 
       fetch: (url, options) => {
         const headers = new Headers(options?.headers);
         if (token) {
@@ -35,7 +39,49 @@ const ChatKitWrapper = ({ userId }: ChatKitWrapperProps) => {
       },
     },
     theme: 'light',
+    // Pass threadId if available
+    ...(initialThreadId ? { threadId: initialThreadId } : {}),
   });
+
+  const { ref, control } = chat;
+
+  // Persist threadId when it changes/is created
+  useEffect(() => {
+    if (chat.threadId) {
+      console.log('Persisting threadId:', chat.threadId);
+      localStorage.setItem('chatkit_thread_id', chat.threadId);
+    } else if (chat.thread?.id) {
+       console.log('Persisting threadId (fallback):', chat.thread.id);
+       localStorage.setItem('chatkit_thread_id', chat.thread.id);
+    }
+  }, [chat.threadId, chat.thread]);
+
+  return (
+    <div className="flex flex-col h-full overflow-hidden relative">
+      <script src="https://cdn.platform.openai.com/deployments/chatkit/chatkit.js" async />
+      {/* <div className="absolute top-0 right-0 p-1 bg-gray-100 text-xs text-gray-400 z-10 opacity-50 hover:opacity-100">
+        Thread: {chat.threadId || chat.thread?.id || 'New'}
+      </div> */}
+      <ChatKit ref={ref} control={control} className="h-full" />
+    </div>
+  );
+};
+
+const ChatKitWrapper = ({ userId }: ChatKitWrapperProps) => {
+  const { token } = useAuth();
+  const apiKey = process.env.NEXT_PUBLIC_CHATKIT_API_KEY;
+
+  // State to hold threadId loaded from localStorage
+  const [threadId, setThreadId] = useState<string | undefined>(undefined);
+  const [isLoaded, setIsLoaded] = useState(false);
+
+  useEffect(() => {
+    const stored = localStorage.getItem('chatkit_thread_id');
+    if (stored) {
+      setThreadId(stored);
+    }
+    setIsLoaded(true);
+  }, []);
 
   if (!apiKey || apiKey === 'your-openai-api-key-here' || apiKey.length < 5) {
     return (
@@ -52,12 +98,11 @@ const ChatKitWrapper = ({ userId }: ChatKitWrapperProps) => {
     );
   }
 
-  return (
-    <div className="flex flex-col h-full overflow-hidden">
-      <script src="https://cdn.platform.openai.com/deployments/chatkit/chatkit.js" async />
-      <ChatKit ref={ref} control={control} className="h-full" />
-    </div>
-  );
+  if (!isLoaded) {
+      return <div className="flex items-center justify-center h-full">Loading chat settings...</div>;
+  }
+
+  return <ChatKitInner userId={userId} token={token} apiKey={apiKey} initialThreadId={threadId} />;
 };
 
 export default ChatKitWrapper;

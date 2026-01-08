@@ -4,30 +4,36 @@ from datetime import datetime
 from typing import Any, List, Dict
 from chatkit.server import ChatKitServer
 import google.generativeai as genai
+from chatkit.types import (
+    AssistantMessageItem,
+    AssistantMessageContent,
+    HiddenContextItem,
+    ThreadItemAddedEvent,
+    ThreadItemDoneEvent,
+    ErrorEvent
+)
 from ..models.message import Message as DBMessage
 from .agent_service import detect_tool_calls, execute_tool_call
-from .simple_store import SimpleMemoryStore
-from chatkit.types import (
-    ThreadItemAddedEvent, 
-    ThreadItemDoneEvent, 
-    AssistantMessageItem, 
-    AssistantMessageContent, 
-    ErrorEvent,
-    HiddenContextItem
-)
-from ..config import settings
+from .sql_chatkit_store import SQLChatKitStore
 
-# Initialize Gemini
-GEMINI_API_KEY = settings.GEMINI_API_KEY
-genai.configure(api_key=GEMINI_API_KEY)
-gemini_model = genai.GenerativeModel('gemini-flash-latest')
+from ..config import settings
 
 class GeminiChatKitServer(ChatKitServer):
     def __init__(self):
-        # Initialize with the SimpleMemoryStore
-        super().__init__(store=SimpleMemoryStore())
+        # Initialize with the SQLChatKitStore
+        super().__init__(store=SQLChatKitStore())
+        
+        # Initialize Gemini Model
+        if not settings.GEMINI_API_KEY:
+             raise ValueError("GEMINI_API_KEY not set in settings")
+        
+        genai.configure(api_key=settings.GEMINI_API_KEY)
+        self.model = genai.GenerativeModel('models/gemini-flash-latest')
 
     async def respond(self, thread, input_user_message, context) -> Any:
+        # Use self.model instead of global gemini_model
+        gemini_model = self.model
+
         """
         Handle incoming messages from ChatKit and generate a response using Gemini.
         """
