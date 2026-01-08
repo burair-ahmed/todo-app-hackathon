@@ -127,6 +127,44 @@ export default function DashboardPage() {
     order: order
   }), [debouncedSearch, filterPriority, filterCompleted, filterTagId, filterLabel, sortBy, order]);
 
+  // Productivity Velocity Calculation
+  const productivityStats = useMemo(() => {
+    if (tasks.length === 0) return { velocity: 0, improvement: 0, message: "Add some tasks to see your velocity!" };
+    
+    const totalCount = tasks.length;
+    const completedCount = tasks.filter(t => t.completed).length;
+    const velocity = Math.round((completedCount / totalCount) * 100);
+    
+    const now = new Date();
+    const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
+    
+    const tasksThisWeek = tasks.filter(t => t.completed && t.completed_at && new Date(t.completed_at) >= oneWeekAgo).length;
+    const tasksLastWeek = tasks.filter(t => t.completed && t.completed_at && new Date(t.completed_at) >= twoWeeksAgo && new Date(t.completed_at) < oneWeekAgo).length;
+    
+    let improvement = 0;
+    let message = "";
+    
+    if (tasksLastWeek > 0) {
+      improvement = Math.round(((tasksThisWeek - tasksLastWeek) / tasksLastWeek) * 100);
+      if (improvement > 0) {
+        message = `You're completing tasks ${improvement}% faster than last week. Keep it up!`;
+      } else if (improvement < 0) {
+        message = `You're ${Math.abs(improvement)}% behind last week's pace. You can do it!`;
+      } else {
+        message = `Maintaining a steady pace. Consistency is key!`;
+      }
+    } else if (tasksThisWeek > 0) {
+      message = `Great start! You've completed ${tasksThisWeek} tasks this week.`;
+    } else if (completedCount > 0) {
+      message = `You've completed ${completedCount} tasks in total. Keep grinding!`;
+    } else {
+      message = `Start completing tasks to track your weekly progress!`;
+    }
+    
+    return { velocity, improvement, message };
+  }, [tasks]);
+
   // Animation Variants
   const container = {
     hidden: { opacity: 0 },
@@ -296,18 +334,6 @@ export default function DashboardPage() {
                       />
 
                       <FilterDropdown
-                        label="All Statuses"
-                        icon={<CheckCircle2 className="w-3.5 h-3.5" />}
-                        value={filterCompleted === undefined ? '' : filterCompleted.toString()}
-                        onChange={(val) => setFilterCompleted(val === '' ? undefined : val === 'true')}
-                        options={[
-                          { label: 'All Statuses', value: '' },
-                          { label: 'Active Only', value: 'false' },
-                          { label: 'Completed Only', value: 'true' }
-                        ]}
-                      />
-
-                      <FilterDropdown
                         label="Context"
                         icon={<Home className="w-3.5 h-3.5" />}
                         value={filterLabel}
@@ -376,12 +402,17 @@ export default function DashboardPage() {
                   <div className="relative z-10 space-y-6">
                     <div className="space-y-1">
                       <p className="text-xs font-black uppercase tracking-[0.2em] text-horizon-200">Productivity Velocity</p>
-                      <h3 className="text-4xl font-black">84%</h3>
+                      <h3 className="text-4xl font-black">{productivityStats.velocity}%</h3>
                     </div>
                     <div className="w-full bg-white/10 h-2 rounded-full overflow-hidden">
-                      <div className="bg-horizon-200 w-[84%] h-full rounded-full" />
+                      <motion.div 
+                        initial={{ width: 0 }}
+                        animate={{ width: `${productivityStats.velocity}%` }}
+                        transition={{ duration: 1, ease: "easeOut" }}
+                        className="bg-horizon-200 h-full rounded-full" 
+                      />
                     </div>
-                    <p className="text-sm font-bold text-white/60">You're completing tasks 12% faster than last week. Keep it up!</p>
+                    <p className="text-sm font-bold text-white/60">{productivityStats.message}</p>
                   </div>
                 </div>
 
