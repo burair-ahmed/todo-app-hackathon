@@ -1,73 +1,68 @@
 <!-- SYNC IMPACT REPORT
-Version change: 1.0.0 → 2.0.0
+Version change: 2.0.0 → 3.0.0
 Modified principles:
-- Premium UX (expanded to include AI chatbot considerations)
-- Security First (expanded to include JWT authentication for AI chatbot)
-- Robust Data Integrity (unchanged)
-- Maintenance Friendly (unchanged)
+- Premium UX (removed - not relevant to cloud-native phase)
+- Security First (removed - not relevant to cloud-native phase)
+- Robust Data Integrity (removed - not relevant to cloud-native phase)
+- Maintenance Friendly (removed - not relevant to cloud-native phase)
+- AI Chatbot Architecture Principles (removed - not relevant to cloud-native phase)
+- LLM Provider Integration (removed - not relevant to cloud-native phase)
+- Scope Enforcement (removed - not relevant to cloud-native phase)
 
 Added sections:
-- AI Chatbot Architecture Principles
-- LLM Provider Integration
-- Statelessness Requirements
-- Scope Enforcement
-
-Removed sections:
-- Feature Guidelines (replaced with AI-specific guidelines)
+- Cloud-Native First: All services must run inside Kubernetes
+- Local-First Kubernetes: Deployment target is Minikube
+- Container Discipline: Frontend and backend must be independently containerized
+- Helm as Source of Truth: All Kubernetes resources must be deployed via Helm charts
+- AI-Assisted DevOps: Prefer Docker AI (Gordon) for Docker operations
+- Observability & Safety: Liveness and readiness probes are mandatory
 
 Templates requiring updates:
-- ✅ .specify/templates/plan-template.md - Updated to align with AI chatbot principles
+- ✅ .specify/templates/plan-template.md - Updated to align with cloud-native principles
 - ✅ .specify/templates/spec-template.md - Updated scope requirements
 - ✅ .specify/templates/tasks-template.md - Updated task categorization
 - ✅ .specify/templates/commands/*.md - Updated references
-- ⚠️ README.md - May need updates (pending manual review)
+- ⚠️ README.md - May need updates for cloud-native deployment (pending manual review)
 
-Follow-up TODOs: None
+Follow-up TODOs:
+- TODO(DEPLOYMENT_GUIDE): Add detailed Minikube deployment guide
 -->
 
-# Project Constitution: Todo AI Chatbot
+# Project Constitution: Todo Cloud-Native Chatbot
 
 ## Core Principles
 
-1. **Premium UX**: Every feature must feel fluid, using animations (Framer Motion) and modern UI patterns. The AI chatbot must provide a seamless conversational experience with intuitive task management capabilities through OpenAI ChatKit UI.
+1. **Cloud-Native First**: All services must run inside Kubernetes. No docker-compose or local process managers. Pods must be stateless and restart-safe.
 
-2. **Security First**: All data access is scoped to the authenticated user via JWT. All chat requests require JWT authentication, user_id must be derived from JWT, and MCP tools must enforce user ownership.
+2. **Local-First Kubernetes**: Deployment target is Minikube. No managed cloud services except external Neon DB. Cluster must be reproducible on any developer machine.
 
-3. **Robust Data Integrity**: Use PostgreSQL Enums and typed schemas for consistent state. All database operations must maintain consistency and enforce proper data validation.
+3. **Container Discipline**: Frontend and backend must be independently containerized. No secrets baked into images. Multi-stage Docker builds preferred.
 
-4. **Maintenance Friendly**: Standard documentation via `CLAUDE.md` and detailed specifications in `/specs`. Code must be well-documented and follow consistent patterns for maintainability.
+4. **Helm as Source of Truth**: All Kubernetes resources must be deployed via Helm charts. values.yaml controls configuration. No hardcoded replicas, images, or env vars.
 
-## AI Chatbot Architecture Principles
+5. **AI-Assisted DevOps**: Prefer Docker AI (Gordon) for Docker operations. Prefer kubectl-ai for kubectl workflows. Use kagent for cluster analysis and optimization.
 
-5. **AI Framework Standard**: Backend must use Python FastAPI with OpenAI Agents SDK as the AI framework. MCP Server must use the Official MCP SDK for tool integration.
+6. **Observability & Safety**: Liveness and readiness probes are mandatory. Resource requests and limits are required. Clear failure diagnostics must be possible.
 
-6. **Statelessness Requirements**: FastAPI server MUST hold NO in-memory chat state. Conversation history is persisted in database. MCP tools are stateless. Every request must be reproducible.
+## Non-Goals
 
-7. **Database-First Architecture**: ORM must use SQLModel with Neon Serverless PostgreSQL as the database. All chatbot operations must interact with the database for persistence rather than in-memory state.
-
-8. **Authentication Integration**: Authentication must use Better Auth + JWT verification for all chatbot interactions. User identity must be validated for every request.
-
-## LLM Provider Integration
-
-9. **LLM Provider Rule**: Gemini API key is used as the underlying model provider. Gemini must be accessed via OpenAI-compatible or adapter layer. Claude Code must NOT introduce direct UI-to-LLM calls. All LLM calls go through backend agent runner.
-
-## Scope Enforcement
-
-10. **Limited Functionality Scope**: AI chatbot supports ONLY basic task operations: Add task, List tasks, Update task, Delete task, Complete task. No scheduling or reminders functionality should be implemented beyond basic task management.
+- No cloud deployment (GKE/EKS)
+- No service mesh
+- No persistent volumes
+- No database inside Kubernetes
 
 ## Tech Stack
 
-- **Frontend**: OpenAI ChatKit UI, Next.js (App Router), Tailwind CSS, Framer Motion, Lucide Icons
-- **Backend**: Python FastAPI, OpenAI Agents SDK, MCP Server (Official MCP SDK)
-- **ORM**: SQLModel
-- **Database**: Neon Serverless PostgreSQL
-- **Authentication**: Better Auth + JWT verification
-- **LLM Provider**: Gemini API (accessed via OpenAI-compatible layer)
+- **Containerization**: Docker with multi-stage builds
+- **Orchestration**: Kubernetes via Minikube
+- **Packaging**: Helm charts for deployment
+- **Database**: External Neon Serverless PostgreSQL (not inside Kubernetes)
+- **DevOps Tools**: Docker AI (Gordon), kubectl-ai, kagent
 
 ## Governance
 
-- **Ratification Date**: 2025-01-01
-- **Last Amended Date**: 2025-12-31
-- **Constitution Version**: 2.0.0 (Major update for AI chatbot phase)
-- **Amendment Procedure**: All changes must maintain backward compatibility with existing task CRUD APIs which must NOT be rewritten
-- **Compliance Review**: All implementations must follow Spec-Kit Plus and Claude Code must reference specs using @specs paths
+- **Ratification Date**: 2026-01-08
+- **Last Amended Date**: 2026-01-08
+- **Constitution Version**: 3.0.0 (Major update for cloud-native phase)
+- **Amendment Procedure**: All changes must maintain backward compatibility with existing Kubernetes deployment patterns
+- **Compliance Review**: All implementations must follow Spec-Kit Plus and ensure cloud-native compliance

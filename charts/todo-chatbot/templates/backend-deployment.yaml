@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: todo-backend
+  labels:
+    app: todo-backend
+spec:
+  replicas: {{ .Values.backend.replicaCount }}
+  selector:
+    matchLabels:
+      app: todo-backend
+  template:
+    metadata:
+      labels:
+        app: todo-backend
+    spec:
+      containers:
+      - name: backend
+        image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag }}"
+        imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
+        ports:
+        - containerPort: {{ .Values.backend.service.targetPort }}
+          name: http
+        env:
+        - name: BACKEND_SERVICE_HOST
+          value: "{{ .Values.config.backendServiceHost }}"
+        - name: BACKEND_SERVICE_PORT
+          value: "{{ .Values.config.backendServicePort }}"
+        - name: NODE_ENV
+          value: "{{ .Values.config.nodeEnv }}"
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: todo-app-secrets
+              key: databaseUrl
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: todo-app-secrets
+              key: jwtSecret
+        - name: BETTER_AUTH_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: todo-app-secrets
+              key: betterAuthSecret
+        resources:
+          requests:
+            memory: {{ .Values.backend.resources.requests.memory }}
+            cpu: {{ .Values.backend.resources.requests.cpu }}
+          limits:
+            memory: {{ .Values.backend.resources.limits.memory }}
+            cpu: {{ .Values.backend.resources.limits.cpu }}
+        livenessProbe:
+          httpGet:
+            path: {{ .Values.backend.healthChecks.livenessPath }}
+            port: {{ .Values.backend.service.targetPort }}
+          initialDelaySeconds: {{ .Values.backend.healthChecks.initialDelaySeconds }}
+          periodSeconds: {{ .Values.backend.healthChecks.periodSeconds }}
+        readinessProbe:
+          httpGet:
+            path: {{ .Values.backend.healthChecks.readinessPath }}
+            port: {{ .Values.backend.service.targetPort }}
+          initialDelaySeconds: 5
+          periodSeconds: 5
