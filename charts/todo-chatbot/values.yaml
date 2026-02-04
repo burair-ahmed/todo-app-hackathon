@@ -1,0 +1,95 @@
+# Default values for todo-chatbot
+
+# Backend configuration
+backend:
+  image:
+    repository: todo-backend
+    tag: latest
+    pullPolicy: IfNotPresent
+  replicaCount: 2
+  service:
+    port: 80
+    targetPort: 8000
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "250m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+  healthChecks:
+    livenessPath: /health
+    readinessPath: /ready
+    initialDelaySeconds: 30
+    periodSeconds: 10
+
+# Frontend configuration
+frontend:
+  image:
+    repository: todo-frontend
+    tag: latest
+    pullPolicy: IfNotPresent
+  replicaCount: 2
+  service:
+    port: 80
+    targetPort: 3000
+    type: NodePort
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "200m"
+  healthChecks:
+    livenessPath: /health
+    readinessPath: /
+    initialDelaySeconds: 30
+    periodSeconds: 10
+
+# Configuration
+config:
+  backendServiceHost: todo-backend-svc
+  backendServicePort: "80"
+  nodeEnv: production
+  logLevel: info
+
+# External database configuration
+database:
+  url: ""
+
+# Secrets
+secrets:
+  jwtSecret: ""
+  betterAuthSecret: ""
+
+# AutoScaling configuration
+autoscaling:
+  enabled: false
+  backend:
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+  frontend:
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 70
+
+# Ingress configuration
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+  hosts:
+    - host: todo.local
+      paths:
+        - path: /
+          pathType: Prefix
+          serviceName: todo-frontend-svc
+          servicePort: 80
+        - path: /api
+          pathType: Prefix
+          serviceName: todo-backend-svc
+          servicePort: 80

@@ -1,0 +1,232 @@
+# API Contract: Todo Chatbot Backend Service
+
+## Overview
+This document defines the API contract for the backend service of the Todo Chatbot application deployed in Kubernetes.
+
+## Base URL
+- Production: `http://todo-backend-svc:80` (internal Kubernetes service)
+- Local Development: `http://localhost:8000`
+
+## Authentication
+All endpoints require JWT token in Authorization header:
+```
+Authorization: Bearer {jwt_token}
+```
+
+## API Endpoints
+
+### Authentication
+
+#### POST /api/auth/register
+Register a new user
+
+**Request**:
+```json
+{
+  "email": "user@example.com",
+  "password": "securePassword123",
+  "name": "John Doe"
+}
+```
+
+**Response (201 Created)**:
+```json
+{
+  "id": "user-uuid",
+  "email": "user@example.com",
+  "name": "John Doe",
+  "createdAt": "2026-01-09T10:00:00Z"
+}
+```
+
+#### POST /api/auth/login
+Login existing user
+
+**Request**:
+```json
+{
+  "email": "user@example.com",
+  "password": "securePassword123"
+}
+```
+
+**Response (200 OK)**:
+```json
+{
+  "user": {
+    "id": "user-uuid",
+    "email": "user@example.com",
+    "name": "John Doe"
+  },
+  "token": "jwt_token_here"
+}
+```
+
+### Tasks
+
+#### GET /api/tasks
+Get all tasks for the authenticated user
+
+**Response (200 OK)**:
+```json
+{
+  "tasks": [
+    {
+      "id": "task-uuid",
+      "title": "Complete project",
+      "description": "Finish the todo app",
+      "completed": false,
+      "userId": "user-uuid",
+      "createdAt": "2026-01-09T10:00:00Z",
+      "updatedAt": "2026-01-09T10:00:00Z"
+    }
+  ]
+}
+```
+
+#### POST /api/tasks
+Create a new task
+
+**Request**:
+```json
+{
+  "title": "New task",
+  "description": "Task description",
+  "completed": false
+}
+```
+
+**Response (201 Created)**:
+```json
+{
+  "id": "task-uuid",
+  "title": "New task",
+  "description": "Task description",
+  "completed": false,
+  "userId": "user-uuid",
+  "createdAt": "2026-01-09T10:00:00Z",
+  "updatedAt": "2026-01-09T10:00:00Z"
+}
+```
+
+#### PUT /api/tasks/{id}
+Update a task
+
+**Request**:
+```json
+{
+  "title": "Updated task",
+  "description": "Updated description",
+  "completed": true
+}
+```
+
+**Response (200 OK)**:
+```json
+{
+  "id": "task-uuid",
+  "title": "Updated task",
+  "description": "Updated description",
+  "completed": true,
+  "userId": "user-uuid",
+  "createdAt": "2026-01-09T10:00:00Z",
+  "updatedAt": "2026-01-09T11:00:00Z"
+}
+```
+
+#### DELETE /api/tasks/{id}
+Delete a task
+
+**Response (204 No Content)**
+
+### Chat
+
+#### POST /api/chat
+Send a message to the AI assistant
+
+**Request**:
+```json
+{
+  "message": "Add a task to buy groceries"
+}
+```
+
+**Response (200 OK)**:
+```json
+{
+  "response": "I've created a task 'buy groceries' for you",
+  "action": {
+    "type": "create_task",
+    "data": {
+      "title": "buy groceries",
+      "completed": false
+    }
+  }
+}
+```
+
+#### GET /api/conversations
+Get conversation history
+
+**Response (200 OK)**:
+```json
+{
+  "conversations": [
+    {
+      "id": "conv-uuid",
+      "title": "Task management",
+      "userId": "user-uuid",
+      "createdAt": "2026-01-09T10:00:00Z",
+      "updatedAt": "2026-01-09T10:00:00Z"
+    }
+  ]
+}
+```
+
+### Health Checks
+
+#### GET /health
+Health check endpoint for Kubernetes liveness probe
+
+**Response (200 OK)**:
+```json
+{
+  "status": "healthy",
+  "timestamp": "2026-01-09T10:00:00Z"
+}
+```
+
+#### GET /ready
+Readiness check endpoint for Kubernetes readiness probe
+
+**Response (200 OK)**:
+```json
+{
+  "status": "ready",
+  "timestamp": "2026-01-09T10:00:00Z"
+}
+```
+
+## Error Responses
+
+All error responses follow this format:
+
+**Response (4xx/5xx)**:
+```json
+{
+  "error": {
+    "message": "Error description",
+    "code": "ERROR_CODE",
+    "timestamp": "2026-01-09T10:00:00Z"
+  }
+}
+```
+
+## Rate Limiting
+- Auth endpoints: 10 requests per minute per IP
+- API endpoints: 100 requests per minute per user
+
+## Security
+- All requests must use HTTPS in production
+- JWT tokens expire after 24 hours
+- Passwords must be at least 8 characters with mixed case, numbers, and symbols

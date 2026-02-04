@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: todo-frontend
+  labels:
+    app: todo-frontend
+spec:
+  replicas: {{ .Values.frontend.replicaCount }}
+  selector:
+    matchLabels:
+      app: todo-frontend
+  template:
+    metadata:
+      labels:
+        app: todo-frontend
+    spec:
+      containers:
+      - name: frontend
+        image: "{{ .Values.frontend.image.repository }}:{{ .Values.frontend.image.tag }}"
+        imagePullPolicy: {{ .Values.frontend.image.pullPolicy }}
+        ports:
+        - containerPort: 3000
+          name: http
+        env:
+        - name: BACKEND_URL
+          value: "http://todo-backend-svc:{{ .Values.backend.service.port }}"
+        - name: NODE_ENV
+          value: "{{ .Values.config.nodeEnv }}"
+        resources:
+          requests:
+            memory: {{ .Values.frontend.resources.requests.memory }}
+            cpu: {{ .Values.frontend.resources.requests.cpu }}
+          limits:
+            memory: {{ .Values.frontend.resources.limits.memory }}
+            cpu: {{ .Values.frontend.resources.limits.cpu }}
+        livenessProbe:
+          httpGet:
+            path: {{ .Values.frontend.healthChecks.livenessPath }}
+            port: 3000
+          initialDelaySeconds: {{ .Values.frontend.healthChecks.initialDelaySeconds }}
+          periodSeconds: {{ .Values.frontend.healthChecks.periodSeconds }}
+        readinessProbe:
+          httpGet:
+            path: {{ .Values.frontend.healthChecks.readinessPath }}
+            port: 3000
+          initialDelaySeconds: 5
+          periodSeconds: 5
