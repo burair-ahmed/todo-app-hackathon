@@ -77,12 +77,58 @@ graph TD
 
 ---
 
-## ⚙️ Quick Start
+## ⚙️ Project Configuration & Setup
 
-### 1. Environment Configuration
-Copy `.env.example` to both `backend/.env` and `frontend/.env.local`. Fill in your Neon DB connection string and Gemini API Key.
+### 1. Environment Variables (`.env`)
 
-### 2. Launch Backend
+#### Backend Setup (`backend/.env`)
+Create a `.env` file in the `backend/` directory with the following structure:
+```env
+# Database
+DATABASE_URL=postgresql://user:password@hostname:5432/neondb?sslmode=require
+
+# Security
+JWT_SECRET=your_super_secret_key_here
+JWT_ALGORITHM=HS256
+JWT_EXPIRATION_HOURS=24
+
+# AI Integration
+GEMINI_API_KEY=your_gemini_api_key
+OPENAI_API_KEY=your_openai_api_key (optional, for compatibility)
+```
+
+#### Frontend Setup (`frontend/.env.local`)
+Create a `.env.local` file in the `frontend/` directory:
+```env
+NEXT_PUBLIC_API_URL=http://localhost:8000
+NEXT_PUBLIC_BETTER_AUTH_URL=http://localhost:8000
+
+# ChatKit Integration
+NEXT_PUBLIC_CHATKIT_API_KEY=your_chatkit_key
+NEXT_PUBLIC_CHATKIT_WORKFLOW_ID=your_workflow_id
+```
+
+---
+
+### 2. Phase I: Console Application
+Before the web UI, Horizon began as a pure Python console application. You can still run it for a lightweight experience.
+
+**Run Command**:
+```bash
+# From the project root
+python -m src.main
+```
+
+**Features**:
+- Interactive CLI Menu.
+- In-memory task management.
+- Zero-dependency runtime (uses standard lib).
+
+---
+
+### 3. Launching the Web System
+
+**Backend**:
 ```bash
 cd backend
 python -m venv venv && source venv/bin/activate
@@ -90,7 +136,7 @@ pip install -r requirements.txt
 uvicorn src.main:app --reload
 ```
 
-### 3. Launch Frontend
+**Frontend**:
 ```bash
 cd frontend
 npm install
