@@ -7,6 +7,19 @@ This module provides the console interface for the Todo Console Application.
 from ..services.task_manager import TaskManager
 
 
+class Colors:
+    """ANSI color codes for console styling."""
+    HEADER = '\033[95m'
+    BLUE = '\033[94m'
+    CYAN = '\033[96m'
+    GREEN = '\033[92m'
+    YELLOW = '\033[93m'
+    RED = '\033[91m'
+    BOLD = '\033[1m'
+    UNDERLINE = '\033[4m'
+    RESET = '\033[0m'
+
+
 class Menu:
     """
     Provides the console menu interface for the Todo Console Application.
@@ -20,18 +33,29 @@ class Menu:
         """Initialize the menu with a task manager."""
         self.task_manager = TaskManager()
 
+    def display_banner(self):
+        """Display a stylized ASCII banner."""
+        banner = rf"""{Colors.CYAN}{Colors.BOLD}
+   __ __         _               
+  / // /__  ____(_)__ ___  ___   
+ / _  / _ \/ __/ /_ // _ \/ _ \  
+/_//_/\___/_/ /_//__/\___/_//_/  
+{Colors.BLUE}   AI-Native Task Orchestrator{Colors.RESET}
+        """
+        print(banner)
+
     def display_menu(self):
         """Display the main menu options."""
-        print("\n" + "="*50)
-        print("TODO CONSOLE APPLICATION")
-        print("="*50)
-        print("1. Add Task")
-        print("2. View Tasks")
-        print("3. Update Task")
-        print("4. Delete Task")
-        print("5. Mark Task Complete/Incomplete")
-        print("6. Exit")
-        print("="*50)
+        print(f"{Colors.BLUE}{Colors.BOLD}{'='*50}{Colors.RESET}")
+        print(f"{Colors.HEADER}{Colors.BOLD}  MAIN MENU{Colors.RESET}")
+        print(f"{Colors.BLUE}{'='*50}{Colors.RESET}")
+        print(f"{Colors.CYAN}1.{Colors.RESET} Add New Task")
+        print(f"{Colors.CYAN}2.{Colors.RESET} View All Tasks")
+        print(f"{Colors.CYAN}3.{Colors.RESET} Update Existing Task")
+        print(f"{Colors.CYAN}4.{Colors.RESET} Delete Task")
+        print(f"{Colors.CYAN}5.{Colors.RESET} Toggle Completion")
+        print(f"{Colors.RED}6.{Colors.RESET} Exit System")
+        print(f"{Colors.BLUE}{'='*50}{Colors.RESET}")
 
     def get_user_choice(self) -> str:
         """
@@ -41,156 +65,165 @@ class Menu:
             str: The user's menu choice (1-6)
         """
         try:
-            choice = input("Enter your choice (1-6): ").strip()
+            prompt = f"{Colors.BOLD}Selection (1-6) > {Colors.RESET}"
+            choice = input(prompt).strip()
             return choice
         except (EOFError, KeyboardInterrupt):
-            print("\n\nExiting application...")
+            print(f"\n\n{Colors.YELLOW}Exiting application...{Colors.RESET}")
             return "6"
 
     def handle_add_task(self):
         """Handle the add task functionality."""
-        print("\n--- Add New Task ---")
+        print(f"\n{Colors.BLUE}{Colors.BOLD}>>> {Colors.HEADER}Add New Task{Colors.RESET}")
         try:
-            title = input("Enter task title: ").strip()
+            title = input(f"{Colors.BOLD}Title: {Colors.RESET}").strip()
             if not title:
-                print("Error: Task title cannot be empty.")
+                print(f"{Colors.RED}[ERROR] Task title cannot be empty.{Colors.RESET}")
                 return
 
-            description = input("Enter task description (optional): ").strip()
+            description = input(f"{Colors.BOLD}Description (optional): {Colors.RESET}").strip()
 
             task = self.task_manager.add_task(title, description)
-            print(f"[COMPLETED] Task added successfully! ID: {task.id}")
+            print(f"{Colors.GREEN}[SUCCESS] Task added! ID: {Colors.CYAN}{task.id}{Colors.RESET}")
         except ValueError as e:
-            print(f"[ERROR] Error: {e}")
+            print(f"{Colors.RED}[ERROR] {e}{Colors.RESET}")
         except Exception as e:
-            print(f"[ERROR] An unexpected error occurred while adding the task: {e}")
+            print(f"{Colors.RED}[ERROR] Unexpected error: {e}{Colors.RESET}")
 
     def handle_view_tasks(self):
         """Handle the view tasks functionality."""
-        print("\n--- View All Tasks ---")
+        print(f"\n{Colors.BLUE}{Colors.BOLD}>>> {Colors.HEADER}Your Task List{Colors.RESET}")
         try:
             tasks = self.task_manager.get_all_tasks()
 
             if not tasks:
-                print("Info: No tasks found.")
+                print(f"{Colors.YELLOW}Info: No tasks found.{Colors.RESET}")
                 return
 
-            print(f"\nTotal tasks: {len(tasks)}")
+            print(f"Total: {Colors.CYAN}{len(tasks)}{Colors.RESET} tasks\n")
             for task in tasks:
-                status_icon = "[COMPLETED]" if task.completed else "[INCOMPLETE]"
-                status_text = "Complete" if task.completed else "Incomplete"
-                print(f"ID: {task.id} | [{status_icon}] {status_text} | Title: {task.title}")
+                if task.completed:
+                    status_badge = f"{Colors.GREEN}[✓ COMPLETE]{Colors.RESET}"
+                    title_style = f"{Colors.BLUE}"
+                else:
+                    status_badge = f"{Colors.YELLOW}[- PENDING ]{Colors.RESET}"
+                    title_style = f"{Colors.BOLD}"
+
+                print(f"{Colors.CYAN}#{task.id[:8]}{Colors.RESET} {status_badge} {title_style}{task.title}{Colors.RESET}")
                 if task.description:
-                    print(f"     Description: {task.description}")
-                print("-" * 40)
+                    print(f"       {Colors.BLUE}└─ {Colors.RESET}{task.description}")
+            print(f"\n{Colors.BLUE}{'-' * 40}{Colors.RESET}")
         except Exception as e:
-            print(f"[ERROR] An unexpected error occurred while viewing tasks: {e}")
+            print(f"{Colors.RED}[ERROR] Unexpected error: {e}{Colors.RESET}")
 
     def handle_update_task(self):
         """Handle the update task functionality."""
-        print("\n--- Update Task ---")
+        print(f"\n{Colors.BLUE}{Colors.BOLD}>>> {Colors.HEADER}Update Task{Colors.RESET}")
         try:
             if self.task_manager.get_task_count() == 0:
-                print("Info: No tasks available to update.")
+                print(f"{Colors.YELLOW}Info: No tasks available to update.{Colors.RESET}")
                 return
 
-            task_id = input("Enter task ID to update: ").strip()
+            task_id = input(f"{Colors.BOLD}Enter Task ID: {Colors.RESET}").strip()
             if not task_id:
-                print("Info:  No task ID provided.")
                 return
+            
+            # Handle '#' prefix if user copies it from the list view
+            if task_id.startswith('#'):
+                task_id = task_id[1:]
 
             task = self.task_manager.get_task_by_id(task_id)
             if not task:
-                print(f"[ERROR] Error: Task with ID '{task_id}' not found.")
+                print(f"{Colors.RED}[ERROR] Task '{task_id}' not found.{Colors.RESET}")
                 return
 
-            print(f"Current task: [{task.title}] - {task.description}")
-            print(f"Status: {'Complete' if task.completed else 'Incomplete'}")
+            print(f"{Colors.BLUE}Current: {Colors.RESET}{task.title}")
+            
+            new_title = input(f"{Colors.BOLD}New Title (ENTER to skip): {Colors.RESET}").strip()
+            new_description = input(f"{Colors.BOLD}New Description (ENTER to skip): {Colors.RESET}").strip()
 
-            new_title = input(f"Enter new title (or press Enter to keep '{task.title}'): ").strip()
-            new_description = input(f"Enter new description (or press Enter to keep current): ").strip()
-
-            # Use None to indicate no change, empty string to indicate clearing
             title_to_update = new_title if new_title != "" else None
             description_to_update = new_description if new_description != "" else None
 
             if title_to_update is None and description_to_update is None:
-                print("Info:  No changes made.")
+                print(f"{Colors.YELLOW}No changes made.{Colors.RESET}")
                 return
 
             if self.task_manager.update_task(task_id, title_to_update, description_to_update):
-                print("[COMPLETED] Task updated successfully!")
+                print(f"{Colors.GREEN}[SUCCESS] Task updated.{Colors.RESET}")
             else:
-                print("[ERROR] Error updating task.")
+                print(f"{Colors.RED}[ERROR] Update failed.{Colors.RESET}")
         except ValueError as e:
-            print(f"[ERROR] Error: {e}")
+            print(f"{Colors.RED}[ERROR] {e}{Colors.RESET}")
         except Exception as e:
-            print(f"[ERROR] An unexpected error occurred while updating the task: {e}")
+            print(f"{Colors.RED}[ERROR] Unexpected error: {e}{Colors.RESET}")
 
     def handle_delete_task(self):
         """Handle the delete task functionality."""
-        print("\n--- Delete Task ---")
+        print(f"\n{Colors.BLUE}{Colors.BOLD}>>> {Colors.HEADER}Delete Task{Colors.RESET}")
         try:
             if self.task_manager.get_task_count() == 0:
-                print("Info:  No tasks available to delete.")
+                print(f"{Colors.YELLOW}Info: No tasks to delete.{Colors.RESET}")
                 return
 
-            task_id = input("Enter task ID to delete: ").strip()
+            task_id = input(f"{Colors.BOLD}Enter Task ID: {Colors.RESET}").strip()
             if not task_id:
-                print("Info:  No task ID provided.")
                 return
+
+            # Handle '#' prefix if user copies it from the list view
+            if task_id.startswith('#'):
+                task_id = task_id[1:]
 
             task = self.task_manager.get_task_by_id(task_id)
             if not task:
-                print(f"[ERROR] Error: Task with ID '{task_id}' not found.")
+                print(f"{Colors.RED}[ERROR] Task '{task_id}' not found.{Colors.RESET}")
                 return
 
-            print(f"Task to delete: [{task.title}] - {task.description}")
-            confirm = input("Are you sure you want to delete this task? (y/N): ").strip().lower()
+            confirm = input(f"{Colors.RED}{Colors.BOLD}Delete '{task.title}'? (y/N): {Colors.RESET}").strip().lower()
 
             if confirm in ['y', 'yes']:
                 if self.task_manager.delete_task(task_id):
-                    print("[COMPLETED] Task deleted successfully!")
+                    print(f"{Colors.GREEN}[SUCCESS] Task deleted.{Colors.RESET}")
                 else:
-                    print("[ERROR] Error deleting task.")
+                    print(f"{Colors.RED}[ERROR] Deletion failed.{Colors.RESET}")
             else:
-                print("Info:  Task deletion cancelled.")
+                print(f"{Colors.YELLOW}Cancelled.{Colors.RESET}")
         except Exception as e:
-            print(f"[ERROR] An unexpected error occurred while deleting the task: {e}")
+            print(f"{Colors.RED}[ERROR] Unexpected error: {e}{Colors.RESET}")
 
     def handle_toggle_completion(self):
         """Handle the toggle task completion functionality."""
-        print("\n--- Toggle Task Completion ---")
+        print(f"\n{Colors.BLUE}{Colors.BOLD}>>> {Colors.HEADER}Toggle Status{Colors.RESET}")
         try:
             if self.task_manager.get_task_count() == 0:
-                print("Info:  No tasks available to toggle.")
                 return
 
-            task_id = input("Enter task ID to toggle completion: ").strip()
+            task_id = input(f"{Colors.BOLD}Enter Task ID: {Colors.RESET}").strip()
             if not task_id:
-                print("Info:  No task ID provided.")
                 return
+
+            # Handle '#' prefix if user copies it from the list view
+            if task_id.startswith('#'):
+                task_id = task_id[1:]
 
             task = self.task_manager.get_task_by_id(task_id)
             if not task:
-                print(f"[ERROR] Error: Task with ID '{task_id}' not found.")
+                print(f"{Colors.RED}[ERROR] Task '{task_id}' not found.{Colors.RESET}")
                 return
 
-            current_status = "Complete" if task.completed else "Incomplete"
-            new_status = "Incomplete" if task.completed else "Complete"
-
             if self.task_manager.toggle_completion(task_id):
-                print(f"[COMPLETED] Task status changed from {current_status} to {new_status}!")
+                # Status message reflects the NEW state
+                status = f"{Colors.GREEN}COMPLETE{Colors.RESET}" if task.completed else f"{Colors.YELLOW}PENDING{Colors.RESET}"
+                print(f"{Colors.GREEN}[SUCCESS] Status updated to {status}{Colors.RESET}")
             else:
-                print("[ERROR] Error toggling task completion.")
+                print(f"{Colors.RED}[ERROR] Toggle failed.{Colors.RESET}")
         except Exception as e:
-            print(f"[ERROR] An unexpected error occurred while toggling task completion: {e}")
+            print(f"{Colors.RED}[ERROR] Unexpected error: {e}{Colors.RESET}")
 
     def run(self):
         """Run the main application loop."""
-        print("Welcome to the Todo Console Application!")
-        print("Type '6' or use Ctrl+C to exit the application.")
-
+        self.display_banner()
+        
         while True:
             self.display_menu()
             choice = self.get_user_choice()
@@ -206,11 +239,10 @@ class Menu:
             elif choice == "5":
                 self.handle_toggle_completion()
             elif choice == "6":
-                print("\nThank you for using the Todo Console Application!")
-                print("Goodbye!")
+                print(f"\n{Colors.HEADER}Thank you for using Horizon.{Colors.RESET}")
+                print(f"{Colors.BLUE}Terminating session...{Colors.RESET}")
                 break
             else:
-                print(f"\n[INVALID] Invalid choice: '{choice}'. Please enter a number between 1 and 6.")
+                print(f"\n{Colors.RED}[INVALID]{Colors.RESET} Choice '{choice}' not recognized.")
 
-            # Pause to let user see the result before showing the menu again
-            input("\nPress Enter to continue...")
+            input(f"\n{Colors.BLUE}Press ENTER to return to menu...{Colors.RESET}")
